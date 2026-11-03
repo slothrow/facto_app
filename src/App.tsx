@@ -1,16 +1,33 @@
 import { AppDataProvider, useAppData } from './app/AppDataContext.tsx';
 import { navigate, useHashRoute } from './app/router.ts';
 import { TABS } from './app/tabs.tsx';
+import { AuthGate } from './features/auth/AuthGate.tsx';
 import { LocalStorageRepository } from './storage/localStorageRepository.ts';
+import { supabase } from './storage/supabaseClient.ts';
+import { SupabaseRepository } from './storage/supabaseRepository.ts';
 
-// 4단계에서 Supabase 구현으로 이 한 줄을 바꾼다.
-const repo = new LocalStorageRepository(window.localStorage);
+// Supabase 접속 정보(.env.local)가 있으면 로그인 후 Supabase에 저장,
+// 없으면 개발용으로 이 기기(localStorage)에만 저장한다.
+const localRepo = new LocalStorageRepository(window.localStorage);
+const remoteRepo = supabase ? new SupabaseRepository(supabase) : null;
 
 export default function App() {
+  if (!supabase || !remoteRepo) {
+    return (
+      <AppDataProvider repo={localRepo}>
+        <Shell />
+      </AppDataProvider>
+    );
+  }
   return (
-    <AppDataProvider repo={repo}>
-      <Shell />
-    </AppDataProvider>
+    <AuthGate db={supabase}>
+      {(session) => (
+        // 계정이 바뀌면 데이터를 처음부터 다시 불러온다
+        <AppDataProvider key={session.user.id} repo={remoteRepo}>
+          <Shell />
+        </AppDataProvider>
+      )}
+    </AuthGate>
   );
 }
 

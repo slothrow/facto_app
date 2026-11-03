@@ -13,6 +13,7 @@
     "schedule": "node scripts/schedule.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "date-fns": "^4.4.0",
     "html-to-image": "^1.11.13",
     "react": "^19.3.1",

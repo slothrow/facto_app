@@ -19,7 +19,9 @@ import { weekdayOf } from '../../engine/dates.ts';
 import { WEEKDAY_NAMES } from '../../engine/label.ts';
 import type { WeekNo, Weekday } from '../../engine/types.ts';
 import { parseBackup, toBackupJson } from '../../storage/backup.ts';
+import { STORAGE_KEY } from '../../storage/localStorageRepository.ts';
 import type { AppData, ClosureRow, TrackAnchorRow } from '../../storage/types.ts';
+import { useAuth } from '../auth/AuthGate.tsx';
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 const withDay = (date: string) => `${date.slice(0, 4)}.${md(date)} (${WEEKDAY_NAMES[weekdayOf(date)]})`;
@@ -36,6 +38,7 @@ export function SettingsPage() {
       <NoticeSection />
       <ThresholdSection />
       <DataSection />
+      <AccountSection />
     </div>
   );
 }
@@ -356,6 +359,9 @@ function DataSection() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [pendingRestore, setPendingRestore] = useState<AppData | null>(null);
   const [seedOpen, setSeedOpen] = useState(false);
+  const auth = useAuth();
+  // 3단계까지 이 기기(localStorage)에 저장했던 데이터. 온라인으로 옮길 때 쓴다.
+  const [localBackup] = useState(readLocalBackup);
 
   const exportJson = () => {
     const blob = new Blob([toBackupJson(data)], { type: 'application/json' });
@@ -397,8 +403,15 @@ function DataSection() {
         <Button variant="danger" className="w-full" onClick={() => setSeedOpen(true)}>
           초기 데이터 불러오기
         </Button>
+        {auth && localBackup && (
+          <Button className="w-full" onClick={() => setPendingRestore(localBackup)}>
+            이 기기의 예전 데이터 가져오기
+          </Button>
+        )}
         <p className="text-sm text-stone-500">
-          지금은 이 기기(브라우저)에만 저장됩니다. 바꾸기 전에 백업 파일을 내보내 두면 안전합니다.
+          {auth
+            ? '온라인(Supabase)에 저장되어 로그인한 모든 기기에서 같은 데이터가 보입니다. 큰 변경 전에는 백업 파일을 내보내 두면 안전합니다.'
+            : '지금은 이 기기(브라우저)에만 저장됩니다. 바꾸기 전에 백업 파일을 내보내 두면 안전합니다.'}
         </p>
       </div>
 
@@ -428,6 +441,36 @@ function DataSection() {
           }}
         />
       )}
+    </Card>
+  );
+}
+
+function readLocalBackup(): AppData | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? parseBackup(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function AccountSection() {
+  const auth = useAuth();
+  const [busy, setBusy] = useState(false);
+  if (!auth) return null;
+  return (
+    <Card title="계정">
+      <p className="mb-3 text-base text-stone-700">{auth.email} 로 로그인됨</p>
+      <Button
+        className="w-full"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await auth.signOut();
+        }}
+      >
+        로그아웃
+      </Button>
     </Card>
   );
 }

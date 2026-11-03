@@ -280,7 +280,7 @@ interface ScheduleOutput {
 |---|---|
 | `settings` | id(=1), data jsonb (공부방 이름, 슬로건, 안내 템플릿, 운영 요일, 경고 기준) |
 | `track_anchors` | weekday pk, start_date, course_month, week_no |
-| `custom_holidays` | date pk, name, type('add' \| 'ignore') |
+| `custom_holidays` | (date, type) pk, name, type('add' | 'ignore') — 같은 날짜에 추가·무시가 함께 있을 수 있어 두 컬럼을 키로 씀 |
 | `closures` | id, kind('closed' \| 'event'), start_date, end_date, weekdays int[] null, label, show_on_calendar |
 | `session_overrides` | date pk, type('skip' \| 'pin'), course_month, week_no, note |
 | `makeup_overrides` | date pk, type('add' \| 'remove') |
@@ -289,6 +289,8 @@ interface ScheduleOutput {
 - 모든 테이블에 updated_at, updated_by.
 - 인증: Supabase Auth 이메일+비밀번호. 공개 가입 끄고, 계정 2개는 대시보드에서 직접 생성.
 - RLS: 로그인한 사용자만 읽기/쓰기.
+- 저장: 표 하나를 통째로 바꾸는 DB 함수 `save_collection`, 전체 교체는 `replace_all`(한 트랜잭션, 실패 시 전부 취소). 동시에 같은 표를 고치면 나중 저장이 남는다.
+- SQL 원본: `supabase/migrations/`. `.env.local`이 없으면 개발용으로 localStorage에 저장한다.
 
 ### 10.2 이후 확장 (지금은 설계만, 만들지 말 것)
 - `classes`: 요일, 시작 시각(정시가 아닐 수 있음), 수업 길이(기본 50분), 연령/학년(5세~7세, 초1~초3), 정원(최소 2, 최대 4), 운영 기간
