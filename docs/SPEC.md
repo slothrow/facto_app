@@ -280,7 +280,7 @@ interface ScheduleOutput {
 |---|---|
 | `settings` | id(=1), data jsonb (공부방 이름, 슬로건, 안내 템플릿, 운영 요일, 경고 기준) |
 | `track_anchors` | weekday pk, start_date, course_month, week_no |
-| `custom_holidays` | (date, type) pk, name, type('add' | 'ignore') — 같은 날짜에 추가·무시가 함께 있을 수 있어 두 컬럼을 키로 씀 |
+| `custom_holidays` | (date, type) pk, name, type('add' \| 'ignore') — 같은 날짜에 추가·무시가 함께 있을 수 있어 두 컬럼을 키로 씀 |
 | `closures` | id, kind('closed' \| 'event'), start_date, end_date, weekdays int[] null, label, show_on_calendar |
 | `session_overrides` | date pk, type('skip' \| 'pin'), course_month, week_no, note |
 | `makeup_overrides` | date pk, type('add' \| 'remove') |
