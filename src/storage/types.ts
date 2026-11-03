@@ -70,6 +70,8 @@ export interface ExportHistoryRow {
   highlightText: string;
   noticeText: string;
   ratio: '1:1' | '4:5';
+  /** 달력 배치. 없으면(예전 기록) 나란히 */
+  layout?: 'side' | 'stack';
   createdAt: string;
 }
 

@@ -9,7 +9,10 @@ import { addMonthsYm, monthEnd, monthStart, monthsBetween } from '../../engine/d
 import { monthName } from '../../engine/label.ts';
 import type { ExportHistoryRow } from '../../storage/types.ts';
 import {
+  DEFAULT_LAYOUT,
+  DEFAULT_RATIO,
   POSTER_WIDTH,
+  ratioForLayout,
   addExportHistory,
   defaultStartMonth,
   defaultTitle,
@@ -40,8 +43,12 @@ export function ExportPage() {
   const [titleEdited, setTitleEdited] = useState(false);
   const [highlight, setHighlight] = useState('');
   const [notice, setNotice] = useState(data.settings.noticeTemplate);
-  const [ratio, setRatio] = useState<Ratio>('1:1');
-  const [layout, setLayout] = useState<PosterLayout>('side');
+  const [ratio, setRatio] = useState<Ratio>(DEFAULT_RATIO);
+  const [layout, setLayout] = useState<PosterLayout>(DEFAULT_LAYOUT);
+  const chooseLayout = (l: PosterLayout) => {
+    setLayout(l);
+    setRatio((r) => ratioForLayout(l, r));
+  };
   const [overflow, setOverflow] = useState(false);
   const [busy, setBusy] = useState<null | 'save' | 'share'>(null);
 
@@ -69,7 +76,7 @@ export function ExportPage() {
     commit(
       addExportHistory(
         data,
-        { startMonth, title, highlightText: highlight, noticeText: notice, ratio },
+        { startMonth, title, highlightText: highlight, noticeText: notice, ratio, layout },
         new Date().toISOString(),
       ),
       '내보낸 기록을 저장했어요',
@@ -104,6 +111,7 @@ export function ExportPage() {
     setHighlight(h.highlightText);
     setNotice(h.noticeText);
     setRatio(h.ratio);
+    setLayout(h.layout ?? DEFAULT_LAYOUT);
     showToast('지난 문구를 불러왔어요');
   };
 
@@ -134,17 +142,17 @@ export function ExportPage() {
       <div className="grid grid-cols-2 gap-2">
         <Button
           variant={layout === 'side' ? 'primary' : 'secondary'}
-          onClick={() => setLayout('side')}
+          onClick={() => chooseLayout('side')}
           aria-pressed={layout === 'side'}
         >
-          시안 A · 나란히
+          나란히 (기본)
         </Button>
         <Button
           variant={layout === 'stack' ? 'primary' : 'secondary'}
-          onClick={() => setLayout('stack')}
+          onClick={() => chooseLayout('stack')}
           aria-pressed={layout === 'stack'}
         >
-          시안 B · 위아래
+          위아래 (4:5)
         </Button>
         <Button variant={ratio === '1:1' ? 'primary' : 'secondary'} onClick={() => setRatio('1:1')} aria-pressed={ratio === '1:1'}>
           정사각형 1:1

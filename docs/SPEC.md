@@ -240,7 +240,9 @@ interface ScheduleOutput {
 - 폰트: Pretendard를 프로젝트에 포함(woff2). 캡처 전에 `document.fonts.ready`를 기다린다.
 - 구성(위→아래):
   1. 작은 공부방 이름 + 큰 제목("1월, 2월 수업 안내")
-  2. 두 달 달력(나란히 배치와 위아래 배치 두 시안을 만들어 비교 후 결정)
+  2. 두 달 달력 — **나란히 배치를 기본으로 결정(2026-11-04)**. 위아래 배치도 선택할 수 있게 남겨 둔다.
+     - 나란히: 1:1·4:5 모두 가능. 칸이 좁아 다른 수업월 라벨("12월 4주")과 "보강수업"은 두 줄로 쓴다.
+     - 위아래: 정사각형에는 다 들어가지 않으므로 고르면 4:5로 자동 전환. 내용이 넘치면 화면에 경고.
      - 요일 헤더 일~토. 일요일·공휴일 빨강, 토요일 파랑.
      - 날짜 칸: 숫자 + 하단 색 띠에 라벨. 라벨 형식은 같은 달 수업월이면 "1주", 다른 수업월이면 "2월 1주".
      - 공휴일 칸: 공휴일 이름. 휴원 칸: 휴원 이름.
@@ -283,7 +285,7 @@ interface ScheduleOutput {
 | `session_overrides` | date pk, type('skip' \| 'pin'), course_month, week_no, note |
 | `makeup_overrides` | date pk, type('add' \| 'remove') |
 | `month_plans` | calendar_month pk, status('draft' \| 'confirmed'), confirmed_at, snapshot jsonb |
-| `export_history` | id, start_month, title, highlight_text, notice_text, ratio, created_at |
+| `export_history` | id, start_month, title, highlight_text, notice_text, ratio, layout('side' \| 'stack', null=side), created_at |
 - 모든 테이블에 updated_at, updated_by.
 - 인증: Supabase Auth 이메일+비밀번호. 공개 가입 끄고, 계정 2개는 대시보드에서 직접 생성.
 - RLS: 로그인한 사용자만 읽기/쓰기.
@@ -299,6 +301,8 @@ interface ScheduleOutput {
 
 ## 12. 결정 기록
 - 2026-11-03: 0단계 질문 12개를 추천안대로 결정(3.1, 3.4, 3.5, 5장, 7.4-C에 반영). 프로젝트는 `facto_app` 폴더에 바로 만든다.
+- 2026-11-04: 안내 달력은 나란히 배치를 기본으로, 위아래 배치는 선택 사항으로 유지(9장, 10.1 반영).
+- 2026-11-04: 내보낸 기록이 없을 때 "다음 두 달" 기본값 = 이번 달부터 처음 나오는 미확정 달.
 
 ## 13. 확인 필요 사항
 - 금요일 2027-01-08을 "12월 4주"로 진행하는 것이 맞는지(12/25, 1/1 공휴일 연속).

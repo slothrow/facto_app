@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { confirmMonth } from '../../app/mutations.ts';
 import { createSeedAppData } from '../../data/seedAppData.ts';
 import {
+  DEFAULT_LAYOUT,
+  DEFAULT_RATIO,
+  ratioForLayout,
   addExportHistory,
   defaultStartMonth,
   defaultTitle,
@@ -47,6 +50,14 @@ describe('달력 만들기 계산', () => {
   it('미확정 달 안내', () => {
     expect(draftMonthsIn(seed, '2026-11')).toEqual([]);
     expect(draftMonthsIn(seed, '2026-12')).toEqual(['2027-01']);
+  });
+
+  it('기본 배치는 나란히, 위아래를 고르면 4:5로', () => {
+    expect(DEFAULT_LAYOUT).toBe('side');
+    expect(DEFAULT_RATIO).toBe('1:1');
+    expect(ratioForLayout('stack', '1:1')).toBe('4:5');
+    expect(ratioForLayout('side', '4:5')).toBe('4:5');
+    expect(ratioForLayout('side', '1:1')).toBe('1:1');
   });
 
   it('내보낸 기록은 최신이 앞, 20개까지', () => {

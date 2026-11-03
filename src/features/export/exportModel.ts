@@ -5,7 +5,14 @@ import type { AppData, ClosureRow, ExportHistoryRow } from '../../storage/types.
 import { isConfirmedMonth, newId } from '../../app/mutations.ts';
 
 export type Ratio = ExportHistoryRow['ratio'];
-export type PosterLayout = 'side' | 'stack';
+/** side = 나란히(기본, 2026-11-04 결정), stack = 위아래(세로형 4:5 전용 권장) */
+export type PosterLayout = NonNullable<ExportHistoryRow['layout']>;
+export const DEFAULT_LAYOUT: PosterLayout = 'side';
+export const DEFAULT_RATIO: Ratio = '1:1';
+
+/** 배치를 바꿀 때 어울리는 비율: 위아래는 정사각형에 다 안 들어가므로 4:5 */
+export const ratioForLayout = (layout: PosterLayout, current: Ratio): Ratio =>
+  layout === 'stack' ? '4:5' : current;
 
 export const POSTER_WIDTH = 1080;
 export const posterHeight = (ratio: Ratio) => (ratio === '1:1' ? 1080 : 1350);
