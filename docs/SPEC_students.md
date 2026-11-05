@@ -111,6 +111,13 @@
 - 요일+시작시간이 있으면 그 반에 배정. 반이 없으면 새로 만듦(반 학년 = 반학년 열).
 - 같은 이름이 이미 있으면 미리보기에서 "중복 의심"으로 표시하고 건너뛰기/새로 추가 중 선택.
 - `확인필요 = Y`인 학생은 "확인 필요" 태그를 달아 가져온다. 태그는 학생 카드에서 원장이 해제.
+- 8단계 결정(2026-11-05):
+  - 반 학년이 빈 줄은 같은 반(요일+시간)의 다른 줄에 적힌 반 학년을 쓴다. 끝까지 없으면 반은 "학년 미정"(반 수정에서 채움).
+  - 학생 "학년" 열이 비어 있으면 배정될 반의 학년을 학생 학년으로 쓴다.
+  - "메모"가 `반 메모:`로 시작하면 반 메모로, 아니면 학생 특이사항으로 넣는다.
+  - 중복 의심 줄은 기본값이 "건너뛰기"이고, 미리보기에서 "새로 추가"로 바꿀 수 있다.
+  - 가져올 때 "반학년 기준 학년도"(기본: 올해 학년도)와 "반 배정 시작일"(기본: 오늘)을 고른다.
+  - 파일 앞의 깨진 BOM 글자(`ï»¿`)는 자동으로 지운다.
 
 ### 5.2 초기 명단
 - `data/initial_roster.csv`(손글씨 시간표 사진에서 읽어낸 명단)를 5.1 가져오기 기능으로 넣는다.
@@ -163,7 +170,7 @@
 | 테이블 | 주요 컬럼 |
 |---|---|
 | `app_members` | user_id pk (auth.users 참조), display_name, role |
-| `classes` | id, weekday, start_time, grade_code, grade_basis_year, alias, opened_on, closed_on, memo |
+| `classes` | id, weekday, start_time, grade_code(비우면 학년 미정), grade_basis_year, alias, opened_on, closed_on(이 날부터 운영 안 함), memo |
 | `students` | id, name, gender, birthday, grade_code, grade_basis_year, grade_adjust, school, student_phone, guardians jsonb(최대 2개: name, relation, phone, is_primary), address, registered_on, first_class_on, status, status_from, status_to, leave_reason, availability jsonb, notice(특이사항), needs_review bool |
 | `student_siblings` | student_id, sibling_id |
 | `enrollments` | id, student_id, class_id, start_date, end_date null |

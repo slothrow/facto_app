@@ -34,7 +34,8 @@ export function fitsWish(wish: WaitlistRow['wish'], cls: Pick<ClassRow, 'weekday
 export function isMatch(roster: Pick<RosterData, 'enrollments' | 'students'>, cls: ClassRow, w: WaitlistRow, today: string): boolean {
   if (!OPEN_STAGES.includes(w.stage) || !isClassActive(cls, today)) return false;
   const g = waitlistGradeOn(w, today);
-  if (g === null || g !== classGradeCodeOn(cls, today)) return false;
+  const cg = classGradeCodeOn(cls, today);
+  if (g === null || cg === null || g !== cg) return false;
   if (classHeadcount(roster, cls.id, today) >= CAPACITY) return false;
   return fitsWish(w.wish, cls);
 }

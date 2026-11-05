@@ -24,7 +24,7 @@ export function RosterPage({ params }: { params: string[] }) {
     body = <ClassDetail classId={id} />;
   } else if (view === 'student' && id) {
     section = 'students';
-    body = <StudentCard studentId={id} />;
+    body = <StudentCard key={id} studentId={id} mode={rest[0]} />;
   } else if (view === 'students') {
     section = 'students';
     body = <StudentListView filterParam={id} />;

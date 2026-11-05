@@ -84,7 +84,7 @@ export const studentGradeLabel = (s: StudentRow, date: string) => gradeLabel(gra
 // ---------------------------------------------------------------
 
 export interface ClassBadge {
-  kind: 'few' | 'over' | 'tight' | 'gradeMismatch';
+  kind: 'few' | 'over' | 'tight' | 'gradeMismatch' | 'noGrade';
   text: string;
 }
 
@@ -96,7 +96,8 @@ export function classBadges(roster: RosterData, cls: ClassRow, today: string): C
   if (count > CAPACITY) out.push({ kind: 'over', text: `정원 초과` });
   if (checkClassTime(cls, roster.classes, today).tight.length > 0) out.push({ kind: 'tight', text: '간격 10분 미만' });
   const classGrade = classGradeCodeOn(cls, today);
-  const mismatch = classMembersOn(roster, cls.id, today).some((s) => {
+  if (classGrade === null) out.push({ kind: 'noGrade', text: '학년 미정' });
+  const mismatch = classGrade !== null && classMembersOn(roster, cls.id, today).some((s) => {
     const g = gradeCodeOn(s, today);
     return g !== null && g !== classGrade;
   });

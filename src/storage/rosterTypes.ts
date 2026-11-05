@@ -11,8 +11,9 @@ export interface ClassRow {
   weekday: Weekday;
   /** 'HH:MM' 24시간제, 10분 단위 */
   startTime: string;
-  gradeCode: GradeCode;
-  gradeBasisYear: number;
+  /** 비어 있으면 학년 미정 */
+  gradeCode: GradeCode | null;
+  gradeBasisYear: number | null;
   alias: string | null;
   openedOn: string | null;
   /** 폐반일. 이 날부터 운영하지 않는다 */

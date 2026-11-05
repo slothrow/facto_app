@@ -1,4 +1,5 @@
 // JSON 백업/복원. 복원할 파일이 이 앱의 백업 형식인지 확인한다.
+import { ROSTER_KEYS, type RosterData } from './rosterTypes.ts';
 import { COLLECTION_KEYS, type AppData } from './types.ts';
 
 export function toBackupJson(data: AppData): string {
@@ -24,4 +25,30 @@ export function parseBackup(text: string): AppData {
     }
   }
   return obj as unknown as AppData;
+}
+
+// ---------------------------------------------------------------
+// 2단계: 학생 데이터(roster)도 같은 백업 파일에 넣는다. 예전 백업(roster 없음)도 그대로 복원된다.
+// ---------------------------------------------------------------
+
+export interface FullBackup {
+  app: AppData;
+  roster: RosterData | null;
+}
+
+export function toFullBackupJson(app: AppData, roster: RosterData): string {
+  return JSON.stringify({ ...app, roster }, null, 2);
+}
+
+export function parseFullBackup(text: string): FullBackup {
+  const app = parseBackup(text);
+  const raw = (app as unknown as { roster?: unknown }).roster;
+  delete (app as unknown as { roster?: unknown }).roster;
+  if (raw === undefined) return { app, roster: null };
+  if (!raw || typeof raw !== 'object') throw new Error('백업 파일의 학생 데이터 형식이 잘못됐습니다.');
+  const obj = raw as Record<string, unknown>;
+  for (const k of ROSTER_KEYS) {
+    if (!Array.isArray(obj[k])) throw new Error(`백업 파일의 학생 데이터에 "${k}" 항목이 없습니다.`);
+  }
+  return { app, roster: obj as unknown as RosterData };
 }

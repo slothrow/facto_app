@@ -18,7 +18,8 @@ import { createSeedAppData } from '../../data/seedAppData.ts';
 import { weekdayOf } from '../../engine/dates.ts';
 import { WEEKDAY_NAMES } from '../../engine/label.ts';
 import type { WeekNo, Weekday } from '../../engine/types.ts';
-import { parseBackup, toBackupJson } from '../../storage/backup.ts';
+import { parseBackup, parseFullBackup, toFullBackupJson, type FullBackup } from '../../storage/backup.ts';
+import { useRoster } from '../../app/RosterContext.tsx';
 import { STORAGE_KEY } from '../../storage/localStorageRepository.ts';
 import type { AppData, ClosureRow, TrackAnchorRow } from '../../storage/types.ts';
 import { useAuth } from '../auth/AuthGate.tsx';
@@ -357,14 +358,15 @@ function ThresholdSection() {
 function DataSection() {
   const { data, replaceAll, showToast } = useAppData();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [pendingRestore, setPendingRestore] = useState<AppData | null>(null);
+  const { roster, replaceRoster } = useRoster();
+  const [pendingRestore, setPendingRestore] = useState<FullBackup | null>(null);
   const [seedOpen, setSeedOpen] = useState(false);
   const auth = useAuth();
   // 3단계까지 이 기기(localStorage)에 저장했던 데이터. 온라인으로 옮길 때 쓴다.
   const [localBackup] = useState(readLocalBackup);
 
   const exportJson = () => {
-    const blob = new Blob([toBackupJson(data)], { type: 'application/json' });
+    const blob = new Blob([toFullBackupJson(data, roster)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -376,7 +378,7 @@ function DataSection() {
   const onFile = async (file: File | undefined) => {
     if (!file) return;
     try {
-      setPendingRestore(parseBackup(await file.text()));
+      setPendingRestore(parseFullBackup(await file.text()));
     } catch (e) {
       showToast(`복원할 수 없어요: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
@@ -404,13 +406,13 @@ function DataSection() {
           초기 데이터 불러오기
         </Button>
         {auth && localBackup && (
-          <Button className="w-full" onClick={() => setPendingRestore(localBackup)}>
+          <Button className="w-full" onClick={() => setPendingRestore({ app: localBackup, roster: null })}>
             이 기기의 예전 데이터 가져오기
           </Button>
         )}
         <p className="text-sm text-stone-500">
           {auth
-            ? '온라인(Supabase)에 저장되어 로그인한 모든 기기에서 같은 데이터가 보입니다. 큰 변경 전에는 백업 파일을 내보내 두면 안전합니다.'
+            ? '온라인(Supabase)에 저장되어 로그인한 모든 기기에서 같은 데이터가 보입니다. 백업 파일에는 학생·반 데이터도 들어 있어요. 무료 플랜은 서버 백업이 약하니 한 달에 한 번은 꼭 내보내 두세요.'
             : '지금은 이 기기(브라우저)에만 저장됩니다. 바꾸기 전에 백업 파일을 내보내 두면 안전합니다.'}
         </p>
       </div>
@@ -418,20 +420,32 @@ function DataSection() {
       {pendingRestore && (
         <ConfirmDialog
           title="백업으로 복원할까요?"
-          body="지금 데이터가 모두 백업 파일 내용으로 바뀝니다. 되돌릴 수 없습니다."
+          body={
+            pendingRestore.roster
+              ? '회차 계획과 학생·반 데이터가 모두 백업 파일 내용으로 바뀝니다. 되돌릴 수 없습니다.'
+              : '회차 계획 데이터가 백업 파일 내용으로 바뀝니다(이 파일에는 학생 데이터가 없어서 학생·반은 그대로). 되돌릴 수 없습니다.'
+          }
           confirmLabel="복원"
           danger
           onCancel={() => setPendingRestore(null)}
           onConfirm={async () => {
-            await replaceAll(pendingRestore, '백업으로 복원했어요');
+            const p = pendingRestore;
             setPendingRestore(null);
+            const ok = await replaceAll(p.app, '백업으로 복원했어요');
+            if (ok && p.roster) {
+              try {
+                await replaceRoster(p.roster);
+              } catch (e) {
+                showToast(`학생 데이터를 복원하지 못했어요: ${e instanceof Error ? e.message : String(e)}`);
+              }
+            }
           }}
         />
       )}
       {seedOpen && (
         <ConfirmDialog
           title="초기 데이터로 되돌릴까요?"
-          body="지금까지 바꾼 내용이 모두 지워지고 처음 상태(2026년 11·12월 확정)로 돌아갑니다. 되돌릴 수 없습니다."
+          body="회차 계획에서 바꾼 내용이 모두 지워지고 처음 상태(2026년 11·12월 확정)로 돌아갑니다. 학생·반 데이터는 그대로예요. 되돌릴 수 없습니다."
           confirmLabel="되돌리기"
           danger
           onCancel={() => setSeedOpen(false)}

@@ -13,7 +13,8 @@ export function ClassForm({ initial, onClose, onSaved }: { initial?: ClassRow; o
   const today = todayStr();
   const [weekday, setWeekday] = useState<Weekday>(initial?.weekday ?? 1);
   const [startTime, setStartTime] = useState(initial?.startTime ?? '16:30');
-  const [grade, setGrade] = useState<number>(initial ? classGradeCodeOn(initial, today) : 7);
+  // -1 = 학년 미정
+  const [grade, setGrade] = useState<number>(initial ? (classGradeCodeOn(initial, today) ?? -1) : 7);
   const [alias, setAlias] = useState(initial?.alias ?? '');
   const [openedOn, setOpenedOn] = useState(initial?.openedOn ?? '');
   const [memo, setMemo] = useState(initial?.memo ?? '');
@@ -23,14 +24,14 @@ export function ClassForm({ initial, onClose, onSaved }: { initial?: ClassRow; o
     id,
     weekday,
     startTime,
-    ...gradeToStore(grade, today),
+    ...(grade < 0 ? { gradeCode: null, gradeBasisYear: null } : gradeToStore(grade, today)),
     alias: alias.trim() || null,
     openedOn: openedOn || null,
     closedOn: initial?.closedOn ?? null,
     memo: memo.trim() || null,
   };
   // 학년을 바꾸지 않았으면 원래 기준 학년도를 그대로 둔다
-  if (initial && classGradeCodeOn(initial, today) === grade) {
+  if (initial && (classGradeCodeOn(initial, today) ?? -1) === grade) {
     draft.gradeCode = initial.gradeCode;
     draft.gradeBasisYear = initial.gradeBasisYear;
   }
@@ -81,6 +82,7 @@ export function ClassForm({ initial, onClose, onSaved }: { initial?: ClassRow; o
           </Field>
           <Field label="학년">
             <select className={inputClass} value={grade} onChange={(e) => setGrade(Number(e.target.value))}>
+              <option value={-1}>학년 미정</option>
               {gradeOptions().map((g) => (
                 <option key={g.code} value={g.code}>
                   {g.label}

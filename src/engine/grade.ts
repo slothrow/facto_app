@@ -48,7 +48,8 @@ export function gradeCodeOn(src: GradeSource, date: string): number | null {
 }
 
 /** 반 학년: 기준 학년도 + 학년을 저장하고 해마다 자동 진급 */
-export function classGradeCodeOn(cls: { gradeCode: number; gradeBasisYear: number }, date: string): number {
+export function classGradeCodeOn(cls: { gradeCode: number | null; gradeBasisYear: number | null }, date: string): number | null {
+  if (cls.gradeCode === null || cls.gradeBasisYear === null) return null;
   return cls.gradeCode + (schoolYearOf(date) - cls.gradeBasisYear);
 }
 
