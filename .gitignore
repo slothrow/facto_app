@@ -12,3 +12,6 @@ coverage
 .idea
 .DS_Store
 *.log
+
+# 실제 아이들 명단(개인정보) — 앱에서 직접 가져오기로 넣는다
+data/initial_roster.csv

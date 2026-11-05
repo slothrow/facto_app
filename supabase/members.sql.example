@@ -1,0 +1,15 @@
+-- 앱 사용자 등록 (대시보드 > SQL Editor에서 실행)
+-- user id 찾는 곳: Supabase 대시보드 > Authentication > Users > 계정 줄의 "User UID" 복사
+-- 아래 '여기에-...' 부분을 복사한 값으로 바꾼 뒤 Run.
+-- 새 사람을 추가할 때도 같은 방식(Authentication에서 계정을 만든 뒤 이 SQL로 등록).
+
+insert into public.app_members (user_id, display_name, role) values
+  ('여기에-원장-user-id', '원장', 'owner'),
+  ('여기에-개발자-user-id', '개발자', 'developer')
+on conflict (user_id) do update set display_name = excluded.display_name, role = excluded.role;
+
+-- 확인: 두 줄이 나오면 성공
+select m.display_name, m.role, u.email from public.app_members m join auth.users u on u.id = m.user_id;
+
+-- 사람을 빼려면(앱 접근 차단):
+-- delete from public.app_members where user_id = '빼려는-user-id';
