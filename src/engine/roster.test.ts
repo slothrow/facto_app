@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkClassTime, formatTimeKo, gapMinutes, isClassOpenOn, type TimedClass } from './classTime.ts';
 import { classGradeCodeOn, gradeCodeOn, gradeLabel, schoolYearOf } from './grade.ts';
+import { timetableRows } from '../features/roster/rosterModel.ts';
 
 const born = (birthday: string, gradeAdjust = 0) => ({ birthday, gradeCode: null, gradeBasisYear: null, gradeAdjust });
 const labelOn = (src: Parameters<typeof gradeCodeOn>[0], date: string) => gradeLabel(gradeCodeOn(src, date));
@@ -95,5 +96,14 @@ describe('기타', () => {
     expect(isClassOpenOn(c, '2026-03-01')).toBe(false);
     expect(isClassOpenOn(c, '2026-11-30')).toBe(true);
     expect(isClassOpenOn(c, '2026-12-01')).toBe(false);
+  });
+});
+
+describe('시간표 줄', () => {
+  it('기본 1:30~5:30 + 다른 시작 시간은 따로 한 줄, 시간순', () => {
+    expect(timetableRows([])).toEqual(['13:30', '14:30', '15:30', '16:30', '17:30']);
+    expect(timetableRows([{ startTime: '16:30' }, { startTime: '17:40' }, { startTime: '10:00' }])).toEqual([
+      '10:00', '13:30', '14:30', '15:30', '16:30', '17:30', '17:40',
+    ]);
   });
 });

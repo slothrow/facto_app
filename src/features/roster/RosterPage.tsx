@@ -10,7 +10,7 @@ import { StudentListView } from './students/StudentListView.tsx';
 import { WaitlistView } from './waitlist/WaitlistView.tsx';
 
 const SECTIONS = [
-  { id: 'classes', label: '반' },
+  { id: 'classes', label: '시간표' },
   { id: 'students', label: '학생' },
   { id: 'waitlist', label: '대기자' },
 ] as const;

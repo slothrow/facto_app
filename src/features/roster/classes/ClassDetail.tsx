@@ -33,7 +33,7 @@ export function ClassDetail({ classId }: { classId: string }) {
   return (
     <div className="space-y-4">
       <button type="button" onClick={() => navigate('/roster/classes')} className="flex h-11 items-center gap-1 text-base text-stone-600">
-        <ChevronLeft className="h-5 w-5" /> 반 목록
+        <ChevronLeft className="h-5 w-5" /> 시간표
       </button>
 
       <Card>

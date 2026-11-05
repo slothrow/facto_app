@@ -8,11 +8,22 @@ import type { Weekday } from '../../../engine/types.ts';
 import { newId, type ClassRow } from '../../../storage/rosterTypes.ts';
 import { CLASS_WEEKDAYS, WEEKDAY_NAMES, classDisplayName, classEndTime } from '../rosterModel.ts';
 
-export function ClassForm({ initial, onClose, onSaved }: { initial?: ClassRow; onClose: () => void; onSaved?: (c: ClassRow) => void }) {
+export function ClassForm({
+  initial,
+  preset,
+  onClose,
+  onSaved,
+}: {
+  initial?: ClassRow;
+  /** 새 반: 시간표 빈칸에서 열 때 요일·시간 미리 채움 */
+  preset?: { weekday: Weekday; startTime: string };
+  onClose: () => void;
+  onSaved?: (c: ClassRow) => void;
+}) {
   const { roster, mutate } = useRoster();
   const today = todayStr();
-  const [weekday, setWeekday] = useState<Weekday>(initial?.weekday ?? 1);
-  const [startTime, setStartTime] = useState(initial?.startTime ?? '16:30');
+  const [weekday, setWeekday] = useState<Weekday>(initial?.weekday ?? preset?.weekday ?? 1);
+  const [startTime, setStartTime] = useState(initial?.startTime ?? preset?.startTime ?? '16:30');
   // -1 = 학년 미정
   const [grade, setGrade] = useState<number>(initial ? (classGradeCodeOn(initial, today) ?? -1) : 7);
   const [alias, setAlias] = useState(initial?.alias ?? '');

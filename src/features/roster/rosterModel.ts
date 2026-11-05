@@ -20,6 +20,14 @@ export function classDisplayName(cls: ClassRow, date: string): string {
 
 export const classEndTime = (cls: Pick<ClassRow, 'startTime'>) => fromMinutes(toMinutes(cls.startTime) + CLASS_MINUTES);
 
+/** 공부방 기본 수업 시간(사진의 시간표 기준). 반이 없어도 시간표에 줄을 보여 준다 */
+export const STANDARD_SLOTS = ['13:30', '14:30', '15:30', '16:30', '17:30'];
+
+/** 시간표 줄: 기본 시간 + 운영 중인 반의 시작 시간(기본에 없으면 따로 한 줄), 시간순 */
+export function timetableRows(classes: Pick<ClassRow, 'startTime'>[]): string[] {
+  return [...new Set([...STANDARD_SLOTS, ...classes.map((c) => c.startTime)])].sort((a, b) => toMinutes(a) - toMinutes(b));
+}
+
 export const compareClasses = (a: ClassRow, b: ClassRow) =>
   a.weekday - b.weekday || toMinutes(a.startTime) - toMinutes(b.startTime);
 

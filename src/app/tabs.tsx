@@ -21,9 +21,9 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
-  { id: 'plan', label: '회차 계획', icon: CalendarIcon, render: ([month]) => <PlanPage month={month} /> },
-  { id: 'roster', label: '반·학생', icon: UsersIcon, wide: true, render: (params) => <RosterPage params={params} /> },
-  { id: 'export', label: '달력 만들기', icon: ImageIcon, render: () => <ExportPage /> },
+  { id: 'roster', label: '시간표', icon: UsersIcon, wide: true, render: (params) => <RosterPage params={params} /> },
+  { id: 'plan', label: '달력', icon: CalendarIcon, render: ([month]) => <PlanPage month={month} /> },
+  { id: 'export', label: '달력배포', icon: ImageIcon, render: () => <ExportPage /> },
   { id: 'settings', label: '설정', icon: GearIcon, render: () => <SettingsPage /> },
   { id: 'attend', label: '출석', icon: CalendarIcon, hiddenUnder: 'plan', render: (params) => <AttendancePage params={params} /> },
 ];
