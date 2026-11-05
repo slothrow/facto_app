@@ -342,6 +342,7 @@ export function TrialList({ trials }: { trials: TrialLessonRow[] }) {
   const { roster, mutate } = useRoster();
   const today = todayStr();
   const [removing, setRemoving] = useState<TrialLessonRow | null>(null);
+  const [editing, setEditing] = useState<TrialLessonRow | null>(null);
   return (
     <>
       <ul className="divide-y divide-stone-100">
@@ -350,13 +351,13 @@ export function TrialList({ trials }: { trials: TrialLessonRow[] }) {
           const w = t.waitlistId ? roster.waitlist.find((x) => x.id === t.waitlistId) : null;
           return (
             <li key={t.id} className="flex items-center gap-2 py-2">
-              <div className="min-w-0 flex-1 text-base">
+              <button type="button" onClick={() => setEditing(t)} className="min-h-11 min-w-0 flex-1 text-left text-base active:bg-stone-50">
                 <span className="font-semibold">{t.date}{t.startTime && ` ${shortTime(t.startTime)}`}</span> {w ? w.name : t.name}
                 <div className="text-sm text-stone-500">
-                  {c ? classDisplayName(c, today) : '반 미정'}
-                  {t.memo && ` · ${t.memo}`}
+                  {c ? classDisplayName(c, today) : '따로'}
+                  {t.memo && ` · ${t.memo}`} · 눌러서 수정
                 </div>
-              </div>
+              </button>
               <Button variant="ghost" className="px-3 text-stone-400" onClick={() => setRemoving(t)}>
                 삭제
               </Button>
@@ -378,6 +379,7 @@ export function TrialList({ trials }: { trials: TrialLessonRow[] }) {
           }}
         />
       )}
+      {editing && <TrialForm initial={editing} onClose={() => setEditing(null)} />}
     </>
   );
 }

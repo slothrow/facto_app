@@ -13,12 +13,14 @@ import { makeupDaysIn } from '../makeup/makeupModel.ts';
 import { classGradeLabel } from '../roster/rosterModel.ts';
 import { TrialForm } from '../roster/waitlist/TrialForm.tsx';
 import { trialCalendarText } from '../roster/waitlist/waitlistModel.ts';
+import type { TrialLessonRow } from '../../storage/rosterTypes.ts';
 import { attendanceList, classesOnDate } from './attendanceModel.ts';
 
 export function DayClassesSection({ date, onClose }: { date: string; onClose: () => void }) {
   const { data } = useAppData();
   const { roster } = useRoster();
   const [addingTrial, setAddingTrial] = useState(false);
+  const [editing, setEditing] = useState<TrialLessonRow | null>(null);
   const { noClassReason, classes } = classesOnDate(data, roster, date);
   const trials = roster.trialLessons.filter((t) => t.date === date).sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''));
   const isMakeupDay = weekdayOf(date) === 6 && makeupDaysIn(data, date.slice(0, 7)).includes(date);
@@ -80,9 +82,18 @@ export function DayClassesSection({ date, onClose }: { date: string; onClose: ()
           {trials.length > 0 && (
             <ul className="space-y-1">
               {trials.map((t) => (
-                <li key={t.id} className="rounded-xl bg-sky-50 px-3 py-2 text-base text-sky-900">
-                  {trialCalendarText(roster, t)}
-                  {t.memo && <span className="text-sm text-sky-700"> · {t.memo}</span>}
+                <li key={t.id}>
+                  <button
+                    type="button"
+                    onClick={() => setEditing(t)}
+                    className="flex min-h-11 w-full items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-left text-base text-sky-900 active:bg-sky-100"
+                  >
+                    <span className="flex-1">
+                      {trialCalendarText(roster, t)}
+                      {t.memo && <span className="text-sm text-sky-700"> · {t.memo}</span>}
+                    </span>
+                    <span className="shrink-0 text-sm text-sky-700">수정</span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -93,6 +104,7 @@ export function DayClassesSection({ date, onClose }: { date: string; onClose: ()
         </div>
       )}
       {addingTrial && <TrialForm presetDate={date} onClose={() => setAddingTrial(false)} />}
+      {editing && <TrialForm initial={editing} onClose={() => setEditing(null)} />}
     </section>
   );
 }
