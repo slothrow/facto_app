@@ -165,7 +165,7 @@ function BasicInfo({ s, onEdit }: { s: StudentRow; onEdit: () => void }) {
         [
           `학부모 ${i + 1}`,
           <a key={i} href={`tel:${g.phone}`} className="text-emerald-800 underline">
-            {g.name || RELATION_LABEL[g.relation]}({RELATION_LABEL[g.relation]}) {formatPhone(g.phone)}
+            {g.name ? `${g.name}(${RELATION_LABEL[g.relation]})` : RELATION_LABEL[g.relation]} {formatPhone(g.phone)}
             {g.isPrimary ? ' · 대표' : ''}
           </a>,
         ] as [string, ReactNode],

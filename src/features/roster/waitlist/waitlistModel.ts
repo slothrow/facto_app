@@ -3,7 +3,7 @@
 import { isClassActive, toMinutes } from '../../../engine/classTime.ts';
 import { classGradeCodeOn, gradeCodeOn } from '../../../engine/grade.ts';
 import type { Weekday } from '../../../engine/types.ts';
-import type { ClassRow, RosterData, WaitlistRow, WaitlistStage } from '../../../storage/rosterTypes.ts';
+import type { ClassRow, RosterData, TrialLessonRow, WaitlistRow, WaitlistStage } from '../../../storage/rosterTypes.ts';
 import { CAPACITY, classHeadcount } from '../rosterModel.ts';
 
 /** 아직 진행 중인 대기자 */
@@ -45,3 +45,10 @@ export const waitlistMatchesForClass = (roster: RosterData, cls: ClassRow, today
 
 export const classMatchesForWaitlist = (roster: RosterData, w: WaitlistRow, today: string) =>
   roster.classes.filter((c) => isMatch(roster, c, w, today));
+
+/** 체험 기록 저장 변경. 대기자에 연결하면 "문의" → "체험 예약"(SPEC 7) */
+export function trialChange(trial: TrialLessonRow, waitlist: WaitlistRow[], today: string) {
+  const w = trial.waitlistId ? waitlist.find((x) => x.id === trial.waitlistId) : null;
+  const waitUpd = w && w.stage === 'inquiry' ? [{ ...w, stage: 'trial_booked' as const, stageHistory: [...w.stageHistory, { stage: 'trial_booked' as const, date: today }] }] : [];
+  return { upsert: { trialLessons: [trial], waitlist: waitUpd } };
+}
