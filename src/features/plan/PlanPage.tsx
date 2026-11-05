@@ -7,7 +7,7 @@ import { confirmMonth, isConfirmedMonth, unconfirmMonth, upsertClosure } from '.
 import { navigate } from '../../app/router.ts';
 import { scheduleFor } from '../../app/scheduleInput.ts';
 import { ClosureForm } from '../../components/ClosureForm.tsx';
-import { AlertIcon, ChevronLeft, ChevronRight, LockIcon } from '../../components/icons.tsx';
+import { AlertIcon, CheckIcon, ChevronLeft, ChevronRight, LockIcon } from '../../components/icons.tsx';
 import { BottomSheet, Button, Card, ConfirmDialog } from '../../components/ui.tsx';
 import { addMonthsYm, monthEnd, monthStart } from '../../engine/dates.ts';
 import { WEEKDAY_NAMES, formatOffset, monthName } from '../../engine/label.ts';
@@ -47,6 +47,9 @@ export function PlanPage({ month }: { month?: string }) {
 
   return (
     <div className="space-y-4">
+      <Button variant="primary" className="flex w-full items-center justify-center gap-2 text-lg" onClick={() => navigate(`/attend/${format(new Date(), 'yyyy-MM-dd')}`)}>
+        <CheckIcon className="h-6 w-6" /> 오늘 출석
+      </Button>
       <header className="flex items-center justify-between gap-2">
         <Button variant="ghost" onClick={() => go(-1)} aria-label="이전 달" className="px-2">
           <ChevronLeft className="h-6 w-6" />

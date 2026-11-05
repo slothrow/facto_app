@@ -17,6 +17,7 @@ import { WEEKDAY_NAMES, formatLabel, monthName } from '../../engine/label.ts';
 import type { DayCell, WeekNo } from '../../engine/types.ts';
 import { BottomSheet, Button, Field, inputClass } from '../../components/ui.tsx';
 import type { AppData } from '../../storage/types.ts';
+import { DayClassesSection } from '../attendance/DayClassesSection.tsx';
 import { ImpactPreview } from './ImpactPreview.tsx';
 
 interface Pending {
@@ -71,6 +72,7 @@ export function DaySheet({ cell, onClose }: { cell: DayCell; onClose: () => void
     <BottomSheet title={title} onClose={onClose}>
       <div className="space-y-4">
         <StatusLine cell={cell} />
+        <DayClassesSection date={cell.date} onClose={onClose} />
 
         {isWeekday && (
           <div className="space-y-2">

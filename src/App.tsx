@@ -64,8 +64,8 @@ function Shell() {
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]">
         <ul className="mx-auto flex max-w-[480px]">
-          {TABS.map((t) => {
-            const active = t.id === tab.id;
+          {TABS.filter((t) => !t.hiddenUnder).map((t) => {
+            const active = t.id === (tab.hiddenUnder ?? tab.id);
             const Icon = t.icon;
             return (
               <li key={t.id} className="flex-1">
