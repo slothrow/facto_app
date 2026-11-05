@@ -1,7 +1,7 @@
 // 대기자 빈자리 매칭. SPEC_students 6.3. 순수 함수.
 // 조건: 운영 중인 반 중 인원 < 4, 반 학년 = 대기자 학년, 희망 요일·시간과 맞음(희망이 비어 있으면 학년만 비교)
-import { isClassActive, toMinutes } from '../../../engine/classTime.ts';
-import { classGradeCodeOn, gradeCodeOn } from '../../../engine/grade.ts';
+import { isClassActive, shortTime, toMinutes } from '../../../engine/classTime.ts';
+import { classGradeCodeOn, gradeCodeOn, gradeLabel } from '../../../engine/grade.ts';
 import type { Weekday } from '../../../engine/types.ts';
 import type { ClassRow, RosterData, TrialLessonRow, WaitlistRow, WaitlistStage } from '../../../storage/rosterTypes.ts';
 import { CAPACITY, classHeadcount } from '../rosterModel.ts';
@@ -51,4 +51,27 @@ export function trialChange(trial: TrialLessonRow, waitlist: WaitlistRow[], toda
   const w = trial.waitlistId ? waitlist.find((x) => x.id === trial.waitlistId) : null;
   const waitUpd = w && w.stage === 'inquiry' ? [{ ...w, stage: 'trial_booked' as const, stageHistory: [...w.stageHistory, { stage: 'trial_booked' as const, date: today }] }] : [];
   return { upsert: { trialLessons: [trial], waitlist: waitUpd } };
+}
+
+/** 체험 대상 이름·학년(대기자에 연결됐으면 대기자 정보) */
+export function trialPerson(roster: Pick<RosterData, 'waitlist'>, t: TrialLessonRow, date: string): { name: string; grade: string | null } {
+  const w = t.waitlistId ? roster.waitlist.find((x) => x.id === t.waitlistId) : null;
+  if (w) {
+    const g = waitlistGradeOn(w, date);
+    return { name: w.name, grade: g === null ? null : gradeLabel(g) };
+  }
+  const g = t.gradeCode !== null && t.gradeBasisYear !== null ? gradeCodeOn({ birthday: null, gradeCode: t.gradeCode, gradeBasisYear: t.gradeBasisYear }, date) : null;
+  return { name: t.name || '체험', grade: g === null ? null : gradeLabel(g) };
+}
+
+/** 달력 칸 표시용: "체험 6:30 김하준(7세)" */
+export function trialCalendarText(roster: Pick<RosterData, 'waitlist'>, t: TrialLessonRow): string {
+  const p = trialPerson(roster, t, t.date);
+  return `체험 ${t.startTime ? `${shortTime(t.startTime)} ` : ''}${p.name}${p.grade ? `(${p.grade})` : ''}`;
+}
+
+/** 좁은 달력 칸용: "6:30 김하준(7세)" (하늘색이 체험 표시) */
+export function trialShortText(roster: Pick<RosterData, 'waitlist'>, t: TrialLessonRow): string {
+  const p = trialPerson(roster, t, t.date);
+  return `${t.startTime ? `${shortTime(t.startTime)} ` : ''}${p.name}${p.grade ? `(${p.grade})` : ''}`;
 }

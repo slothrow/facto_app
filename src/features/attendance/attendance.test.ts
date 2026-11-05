@@ -85,7 +85,7 @@ describe('반 명단 + 결석', () => {
   });
 
   it('그날 체험 학생은 "체험"으로 명단 뒤에 붙는다', () => {
-    const r = { ...setup(), trialLessons: [{ id: 't', date: '2026-11-10', classId: 'a', waitlistId: null, name: '체험이', memo: null }] };
+    const r = { ...setup(), trialLessons: [{ id: 't', date: '2026-11-10', classId: 'a', waitlistId: null, name: '체험이', memo: null, startTime: null, gradeCode: null, gradeBasisYear: null }] };
     const list = attendanceList(r, 'a', '2026-11-10');
     expect(list).toHaveLength(3);
     expect(list[2]).toMatchObject({ kind: 'trial', name: '체험이' });

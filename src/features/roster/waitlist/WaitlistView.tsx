@@ -5,6 +5,7 @@ import { navigate } from '../../../app/router.ts';
 import { todayStr, useRoster } from '../../../app/RosterContext.tsx';
 import { ChevronLeft, PlusIcon } from '../../../components/icons.tsx';
 import { BottomSheet, Button, Card, ConfirmDialog, Field, inputClass } from '../../../components/ui.tsx';
+import { shortTime } from '../../../engine/classTime.ts';
 import { gradeLabel, gradeOptions, gradeToStore } from '../../../engine/grade.ts';
 import type { Weekday } from '../../../engine/types.ts';
 import {
@@ -350,7 +351,7 @@ export function TrialList({ trials }: { trials: TrialLessonRow[] }) {
           return (
             <li key={t.id} className="flex items-center gap-2 py-2">
               <div className="min-w-0 flex-1 text-base">
-                <span className="font-semibold">{t.date}</span> {w ? w.name : t.name}
+                <span className="font-semibold">{t.date}{t.startTime && ` ${shortTime(t.startTime)}`}</span> {w ? w.name : t.name}
                 <div className="text-sm text-stone-500">
                   {c ? classDisplayName(c, today) : '반 미정'}
                   {t.memo && ` · ${t.memo}`}

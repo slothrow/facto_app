@@ -9,16 +9,34 @@ import { scheduleFor } from '../../app/scheduleInput.ts';
 import { ClosureForm } from '../../components/ClosureForm.tsx';
 import { AlertIcon, CheckIcon, ChevronLeft, ChevronRight, LockIcon } from '../../components/icons.tsx';
 import { BottomSheet, Button, Card, ConfirmDialog } from '../../components/ui.tsx';
-import { addMonthsYm, monthEnd, monthStart } from '../../engine/dates.ts';
+import { addMonthsYm, monthEnd, monthOf, monthStart } from '../../engine/dates.ts';
 import { WEEKDAY_NAMES, formatOffset, monthName } from '../../engine/label.ts';
 import { snapshotMonth } from '../../engine/schedule.ts';
 import type { DayCell, MonthSummary } from '../../engine/types.ts';
 import type { AppData } from '../../storage/types.ts';
 import { DaySheet } from './DaySheet.tsx';
 import { ImpactPreview } from './ImpactPreview.tsx';
-import { MonthCalendar, WeekLegend } from './MonthCalendar.tsx';
+import { MonthCalendar, WeekLegend, type PrivateNote } from './MonthCalendar.tsx';
+import { PlanSwitch } from './PlanSwitch.tsx';
+import { useRoster } from '../../app/RosterContext.tsx';
+import type { RosterData } from '../../storage/rosterTypes.ts';
+import { trialShortText } from '../roster/waitlist/waitlistModel.ts';
 
 const isYm = (s?: string): s is string => !!s && /^\d{4}-\d{2}$/.test(s);
+
+/** 선생님만 보는 칸 메모: 체험수업(시간순), 토요보강 예약 수 */
+function privateNotesFor(roster: RosterData, ym: string): Map<string, PrivateNote[]> {
+  const map = new Map<string, PrivateNote[]>();
+  const add = (date: string, n: PrivateNote) => map.set(date, [...(map.get(date) ?? []), n]);
+  roster.trialLessons
+    .filter((t) => monthOf(t.date) === ym)
+    .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
+    .forEach((t) => add(t.date, { kind: 'trial', text: trialShortText(roster, t) }));
+  const counts = new Map<string, number>();
+  for (const b of roster.makeupBookings) if (monthOf(b.date) === ym) counts.set(b.date, (counts.get(b.date) ?? 0) + 1);
+  for (const [date, n] of counts) add(date, { kind: 'makeup', text: `보강 예약 ${n}명` });
+  return map;
+}
 
 export function PlanPage({ month }: { month?: string }) {
   const { data, commit } = useAppData();
@@ -29,6 +47,8 @@ export function PlanPage({ month }: { month?: string }) {
   const summary = output.monthSummaries[0];
   const warnings = output.warnings.filter((w) => w.calendarMonth === ym);
   const confirmed = isConfirmedMonth(data, ym);
+  const { roster } = useRoster();
+  const notes = useMemo(() => privateNotesFor(roster, ym), [roster, ym]);
 
   const [selected, setSelected] = useState<DayCell | null>(null);
   const [closureOpen, setClosureOpen] = useState(false);
@@ -47,6 +67,7 @@ export function PlanPage({ month }: { month?: string }) {
 
   return (
     <div className="space-y-4">
+      <PlanSwitch active="plan" month={ym} />
       <Button variant="primary" className="flex w-full items-center justify-center gap-2 text-lg" onClick={() => navigate(`/attend/${format(new Date(), 'yyyy-MM-dd')}`)}>
         <CheckIcon className="h-6 w-6" /> 오늘 출석
       </Button>
@@ -71,8 +92,9 @@ export function PlanPage({ month }: { month?: string }) {
         </Button>
       </header>
 
-      <MonthCalendar calendarMonth={ym} days={output.days} onSelect={setSelected} />
+      <MonthCalendar calendarMonth={ym} days={output.days} onSelect={setSelected} notes={notes} />
       <WeekLegend />
+      {notes.size > 0 && <p className="-mt-2 text-xs text-stone-500">하늘색(체험)·분홍색(보강 예약)은 선생님만 보이고 달력배포 이미지에는 들어가지 않아요.</p>}
 
       <SummaryCard summary={summary} threshold={data.settings.offsetWarningThreshold} />
 

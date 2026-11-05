@@ -23,9 +23,23 @@ export const classEndTime = (cls: Pick<ClassRow, 'startTime'>) => fromMinutes(to
 /** 공부방 기본 수업 시간(사진의 시간표 기준). 반이 없어도 시간표에 줄을 보여 준다 */
 export const STANDARD_SLOTS = ['13:30', '14:30', '15:30', '16:30', '17:30'];
 
-/** 시간표 줄: 기본 시간 + 운영 중인 반의 시작 시간(기본에 없으면 따로 한 줄), 시간순 */
-export function timetableRows(classes: Pick<ClassRow, 'startTime'>[]): string[] {
-  return [...new Set([...STANDARD_SLOTS, ...classes.map((c) => c.startTime)])].sort((a, b) => toMinutes(a) - toMinutes(b));
+/** 시간표 세로 범위(분): 기본 1:30~6:20, 그 밖의 반이 있으면 넓힌다 */
+export function timetableRange(classes: Pick<ClassRow, 'startTime'>[]): { start: number; end: number } {
+  const starts = classes.map((c) => toMinutes(c.startTime));
+  const first = toMinutes(STANDARD_SLOTS[0]);
+  const last = toMinutes(STANDARD_SLOTS[STANDARD_SLOTS.length - 1]) + CLASS_MINUTES;
+  return { start: Math.min(first, ...starts), end: Math.max(last, ...starts.map((s) => s + CLASS_MINUTES)) };
+}
+
+/** 그 요일에서 반과 겹치지 않는 기본 시간(빈칸 표시용) */
+export function freeStandardSlots(dayClasses: Pick<ClassRow, 'startTime'>[]): string[] {
+  return STANDARD_SLOTS.filter((t) =>
+    dayClasses.every((c) => {
+      const a = toMinutes(t);
+      const b = toMinutes(c.startTime);
+      return a + CLASS_MINUTES <= b || b + CLASS_MINUTES <= a;
+    }),
+  );
 }
 
 export const compareClasses = (a: ClassRow, b: ClassRow) =>

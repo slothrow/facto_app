@@ -123,6 +123,20 @@ export interface TrialLessonRow {
   /** 대기자에 연결하지 않았을 때 이름 */
   name: string;
   memo: string | null;
+  /** 시작 시간 'HH:MM'. 보통 정규수업 뒤 6:30 이후 */
+  startTime: string | null;
+  /** 대기자에 연결하지 않았을 때 학년 */
+  gradeCode: GradeCode | null;
+  gradeBasisYear: number | null;
+}
+
+/** 토요보강 예약: 보강데이 30분 타임 하나에 학생 1명 */
+export interface MakeupBookingRow {
+  id: string;
+  studentId: string;
+  date: string;
+  startTime: string;
+  memo: string | null;
 }
 
 export interface AbsenceRow {
@@ -140,6 +154,7 @@ export interface RosterData {
   waitlist: WaitlistRow[];
   trialLessons: TrialLessonRow[];
   absences: AbsenceRow[];
+  makeupBookings: MakeupBookingRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -154,6 +169,7 @@ export const ROSTER_KEYS: RosterKey[] = [
   'waitlist',
   'trialLessons',
   'absences',
+  'makeupBookings',
 ];
 
 export const emptyRoster = (): RosterData => ({
@@ -165,6 +181,7 @@ export const emptyRoster = (): RosterData => ({
   waitlist: [],
   trialLessons: [],
   absences: [],
+  makeupBookings: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];

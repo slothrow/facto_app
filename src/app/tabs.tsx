@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { CalendarIcon, GearIcon, ImageIcon, UsersIcon } from '../components/icons.tsx';
 import { AttendancePage } from '../features/attendance/AttendancePage.tsx';
 import { ExportPage } from '../features/export/ExportPage.tsx';
+import { MakeupPage } from '../features/makeup/MakeupPage.tsx';
 import { PlanPage } from '../features/plan/PlanPage.tsx';
 import { RosterPage } from '../features/roster/RosterPage.tsx';
 import { SettingsPage } from '../features/settings/SettingsPage.tsx';
@@ -26,4 +27,5 @@ export const TABS: TabDef[] = [
   { id: 'export', label: '달력배포', icon: ImageIcon, render: () => <ExportPage /> },
   { id: 'settings', label: '설정', icon: GearIcon, render: () => <SettingsPage /> },
   { id: 'attend', label: '출석', icon: CalendarIcon, hiddenUnder: 'plan', render: (params) => <AttendancePage params={params} /> },
+  { id: 'makeup', label: '토요보강', icon: CalendarIcon, hiddenUnder: 'plan', render: ([month]) => <MakeupPage month={month} /> },
 ];

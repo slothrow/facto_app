@@ -8,14 +8,22 @@ import { MAKEUP_COLOR, WEEK_COLORS } from '../../components/weekColors.ts';
 const HEADERS = ['일', '월', '화', '수', '목', '금', '토'];
 const HATCH = 'repeating-linear-gradient(45deg, #e7e5e4 0 4px, transparent 4px 8px)';
 
+/** 선생님만 보는 칸 메모(체험수업, 토요보강 예약 수). 달력배포 이미지에는 들어가지 않는다 */
+export interface PrivateNote {
+  kind: 'trial' | 'makeup';
+  text: string;
+}
+
 export function MonthCalendar({
   calendarMonth,
   days,
   onSelect,
+  notes,
 }: {
   calendarMonth: string;
   days: DayCell[];
   onSelect: (cell: DayCell) => void;
+  notes?: Map<string, PrivateNote[]>;
 }) {
   const monthDays = days.filter((d) => monthOf(d.date) === calendarMonth);
   const lead = weekdayOf(monthStart(calendarMonth));
@@ -34,7 +42,7 @@ export function MonthCalendar({
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-stone-200 bg-stone-200">
         {cells.map((c, i) =>
           c ? (
-            <CalendarCell key={c.date} cell={c} calendarMonth={calendarMonth} onSelect={onSelect} />
+            <CalendarCell key={c.date} cell={c} calendarMonth={calendarMonth} onSelect={onSelect} notes={notes?.get(c.date)} />
           ) : (
             <div key={`blank-${i}`} className="min-h-[84px] bg-stone-50" />
           ),
@@ -48,10 +56,12 @@ function CalendarCell({
   cell,
   calendarMonth,
   onSelect,
+  notes,
 }: {
   cell: DayCell;
   calendarMonth: string;
   onSelect: (cell: DayCell) => void;
+  notes?: PrivateNote[];
 }) {
   const day = Number(cell.date.slice(8, 10));
   const red = cell.weekday === 0 || cell.status === 'holiday';
@@ -83,6 +93,16 @@ function CalendarCell({
           <span key={e} className="flex min-w-0 items-start gap-0.5 text-[10px] leading-tight text-amber-800">
             <span className="mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
             <span className="line-clamp-2">{e}</span>
+          </span>
+        ))}
+        {notes?.map((n, i) => (
+          <span
+            key={i}
+            className={`line-clamp-3 rounded px-0.5 text-[10px] leading-tight ${
+              n.kind === 'trial' ? 'bg-sky-100 text-sky-900' : 'bg-fuchsia-100 text-fuchsia-900'
+            }`}
+          >
+            {n.text}
           </span>
         ))}
       </div>

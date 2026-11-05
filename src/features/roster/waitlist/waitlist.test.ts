@@ -75,7 +75,7 @@ describe('빈자리 매칭 (SPEC 6.3)', () => {
 });
 
 describe('체험수업 (SPEC 7)', () => {
-  const trial = { id: 't', date: '2026-11-10', classId: 'a', waitlistId: 'w1', name: '', memo: null };
+  const trial = { id: 't', date: '2026-11-10', classId: 'a', waitlistId: 'w1', name: '', memo: null, startTime: '18:30', gradeCode: null, gradeBasisYear: null };
   it('대기자에 연결하면 문의 → 체험 예약', () => {
     const ch = trialChange(trial, [wait()], today);
     expect(ch.upsert.waitlist[0].stage).toBe('trial_booked');

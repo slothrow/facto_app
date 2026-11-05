@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkClassTime, formatTimeKo, gapMinutes, isClassOpenOn, type TimedClass } from './classTime.ts';
 import { classGradeCodeOn, gradeCodeOn, gradeLabel, schoolYearOf } from './grade.ts';
-import { timetableRows } from '../features/roster/rosterModel.ts';
+import { freeStandardSlots, timetableRange } from '../features/roster/rosterModel.ts';
 
 const born = (birthday: string, gradeAdjust = 0) => ({ birthday, gradeCode: null, gradeBasisYear: null, gradeAdjust });
 const labelOn = (src: Parameters<typeof gradeCodeOn>[0], date: string) => gradeLabel(gradeCodeOn(src, date));
@@ -99,11 +99,15 @@ describe('기타', () => {
   });
 });
 
-describe('시간표 줄', () => {
-  it('기본 1:30~5:30 + 다른 시작 시간은 따로 한 줄, 시간순', () => {
-    expect(timetableRows([])).toEqual(['13:30', '14:30', '15:30', '16:30', '17:30']);
-    expect(timetableRows([{ startTime: '16:30' }, { startTime: '17:40' }, { startTime: '10:00' }])).toEqual([
-      '10:00', '13:30', '14:30', '15:30', '16:30', '17:30', '17:40',
-    ]);
+describe('시간표 배치(10분 단위)', () => {
+  it('세로 범위: 기본 1:30~6:20, 더 이른·늦은 반이 있으면 넓힘', () => {
+    expect(timetableRange([])).toEqual({ start: 810, end: 1100 });
+    expect(timetableRange([{ startTime: '13:40' }])).toEqual({ start: 810, end: 1100 });
+    expect(timetableRange([{ startTime: '18:30' }, { startTime: '12:00' }])).toEqual({ start: 720, end: 1160 });
+  });
+  it('1:40반(~2:30)이 있으면 겹치는 1:30 빈칸만 숨김', () => {
+    expect(freeStandardSlots([{ startTime: '13:40' }])).toEqual(['14:30', '15:30', '16:30', '17:30']);
+    expect(freeStandardSlots([{ startTime: '13:50' }])).toEqual(['15:30', '16:30', '17:30']);
+    expect(freeStandardSlots([{ startTime: '16:30' }])).toEqual(['13:30', '14:30', '15:30', '17:30']);
   });
 });

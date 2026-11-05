@@ -32,6 +32,7 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   waitlist: 'waitlist',
   trialLessons: 'trial_lessons',
   absences: 'absences',
+  makeupBookings: 'makeup_bookings',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -44,6 +45,7 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   waitlist: ['id'],
   trialLessons: ['id'],
   absences: ['date', 'class_id', 'student_id'],
+  makeupBookings: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);
