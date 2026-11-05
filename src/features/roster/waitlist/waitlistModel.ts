@@ -70,8 +70,8 @@ export function trialCalendarText(roster: Pick<RosterData, 'waitlist'>, t: Trial
   return `체험 ${t.startTime ? `${shortTime(t.startTime)} ` : ''}${p.name}${p.grade ? `(${p.grade})` : ''}`;
 }
 
-/** 좁은 달력 칸용: "6:30 김하준(7세)" (하늘색이 체험 표시) */
-export function trialShortText(roster: Pick<RosterData, 'waitlist'>, t: TrialLessonRow): string {
+/** 좁은 달력 칸용 3줄: ["6:50", "이서안", "5세"] (하늘색이 체험 표시). 빈 줄은 뺀다 */
+export function trialLines(roster: Pick<RosterData, 'waitlist'>, t: TrialLessonRow): string[] {
   const p = trialPerson(roster, t, t.date);
-  return `${t.startTime ? `${shortTime(t.startTime)} ` : ''}${p.name}${p.grade ? `(${p.grade})` : ''}`;
+  return [t.startTime ? shortTime(t.startTime) : '', p.name, p.grade ?? ''].filter(Boolean);
 }

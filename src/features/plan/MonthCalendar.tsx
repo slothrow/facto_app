@@ -11,7 +11,8 @@ const HATCH = 'repeating-linear-gradient(45deg, #e7e5e4 0 4px, transparent 4px 8
 /** 선생님만 보는 칸 메모(체험수업, 토요보강 예약 수). 달력배포 이미지에는 들어가지 않는다 */
 export interface PrivateNote {
   kind: 'trial' | 'makeup';
-  text: string;
+  /** 줄마다 따로 표시(칸이 좁아 중간에서 끊기지 않게). 긴 줄은 …로 줄인다 */
+  lines: string[];
 }
 
 export function MonthCalendar({
@@ -98,11 +99,15 @@ function CalendarCell({
         {notes?.map((n, i) => (
           <span
             key={i}
-            className={`line-clamp-3 rounded px-0.5 text-[10px] leading-tight ${
+            className={`block min-w-0 rounded px-0.5 py-px text-[10px] leading-tight ${
               n.kind === 'trial' ? 'bg-sky-100 text-sky-900' : 'bg-fuchsia-100 text-fuchsia-900'
             }`}
           >
-            {n.text}
+            {n.lines.map((line, j) => (
+              <span key={j} className={`block truncate ${j === 1 ? 'font-semibold' : ''}`}>
+                {line}
+              </span>
+            ))}
           </span>
         ))}
       </div>

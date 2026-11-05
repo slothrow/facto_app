@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { emptyRoster, type ClassRow, type RosterData, type WaitlistRow } from '../../../storage/rosterTypes.ts';
 import { blankStudent } from '../students/studentModel.ts';
-import { classMatchesForWaitlist, fitsWish, trialChange, waitlistMatchesForClass } from './waitlistModel.ts';
+import { classMatchesForWaitlist, fitsWish, trialChange, trialLines, waitlistMatchesForClass } from './waitlistModel.ts';
 
 const today = '2026-11-05';
 const cls = (id: string, weekday: 1 | 2 | 3 | 4 | 5, startTime: string, gradeCode: number | null = 8): ClassRow => ({
@@ -83,5 +83,13 @@ describe('체험수업 (SPEC 7)', () => {
   });
   it('이미 체험 완료면 단계를 되돌리지 않음', () => {
     expect(trialChange(trial, [wait({ stage: 'trial_done' })], today).upsert.waitlist).toEqual([]);
+  });
+});
+
+describe('달력 칸 체험 표시', () => {
+  it('시간 / 이름 / 나이 세 줄', () => {
+    const t = { id: 't', date: '2026-11-10', classId: null, waitlistId: null, name: '이서안', memo: null, startTime: '18:50', gradeCode: 4, gradeBasisYear: 2026 };
+    expect(trialLines({ waitlist: [] }, t)).toEqual(['6:50', '이서안', '5세']);
+    expect(trialLines({ waitlist: [] }, { ...t, startTime: null, gradeCode: null, gradeBasisYear: null })).toEqual(['이서안']);
   });
 });

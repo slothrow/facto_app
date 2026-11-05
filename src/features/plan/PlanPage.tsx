@@ -20,7 +20,7 @@ import { MonthCalendar, WeekLegend, type PrivateNote } from './MonthCalendar.tsx
 import { PlanSwitch } from './PlanSwitch.tsx';
 import { useRoster } from '../../app/RosterContext.tsx';
 import type { RosterData } from '../../storage/rosterTypes.ts';
-import { trialShortText } from '../roster/waitlist/waitlistModel.ts';
+import { trialLines } from '../roster/waitlist/waitlistModel.ts';
 
 const isYm = (s?: string): s is string => !!s && /^\d{4}-\d{2}$/.test(s);
 
@@ -31,10 +31,10 @@ function privateNotesFor(roster: RosterData, ym: string): Map<string, PrivateNot
   roster.trialLessons
     .filter((t) => monthOf(t.date) === ym)
     .sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''))
-    .forEach((t) => add(t.date, { kind: 'trial', text: trialShortText(roster, t) }));
+    .forEach((t) => add(t.date, { kind: 'trial', lines: trialLines(roster, t) }));
   const counts = new Map<string, number>();
   for (const b of roster.makeupBookings) if (monthOf(b.date) === ym) counts.set(b.date, (counts.get(b.date) ?? 0) + 1);
-  for (const [date, n] of counts) add(date, { kind: 'makeup', text: `보강 예약 ${n}명` });
+  for (const [date, n] of counts) add(date, { kind: 'makeup', lines: ['보강 예약', `${n}명`] });
   return map;
 }
 
