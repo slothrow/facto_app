@@ -63,3 +63,42 @@ export const AlertIcon = ({ className }: P) => (
     <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
   </svg>
 );
+
+export const UsersIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" />
+  </svg>
+);
+
+export const PlusIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
+export const PhoneIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z" />
+  </svg>
+);
+
+export const MessageIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M21 12a8 8 0 0 1-11.8 7L3 21l2-6A8 8 0 1 1 21 12z" />
+  </svg>
+);
+
+export const SearchIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+
+export const CheckIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="m5 12 5 5L20 7" />
+  </svg>
+);

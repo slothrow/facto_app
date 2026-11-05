@@ -2,7 +2,9 @@ import { AppDataProvider, useAppData } from './app/AppDataContext.tsx';
 import { navigate, useHashRoute } from './app/router.ts';
 import { TABS } from './app/tabs.tsx';
 import { AuthGate } from './features/auth/AuthGate.tsx';
+import { RosterProvider } from './app/RosterContext.tsx';
 import { LocalStorageRepository } from './storage/localStorageRepository.ts';
+import { LocalRosterRepository, SupabaseRosterRepository } from './storage/rosterRepository.ts';
 import { supabase } from './storage/supabaseClient.ts';
 import { SupabaseRepository } from './storage/supabaseRepository.ts';
 
@@ -10,12 +12,16 @@ import { SupabaseRepository } from './storage/supabaseRepository.ts';
 // 없으면 개발용으로 이 기기(localStorage)에만 저장한다.
 const localRepo = new LocalStorageRepository(window.localStorage);
 const remoteRepo = supabase ? new SupabaseRepository(supabase) : null;
+const localRoster = new LocalRosterRepository(window.localStorage);
+const remoteRoster = supabase ? new SupabaseRosterRepository(supabase) : null;
 
 export default function App() {
-  if (!supabase || !remoteRepo) {
+  if (!supabase || !remoteRepo || !remoteRoster) {
     return (
       <AppDataProvider repo={localRepo}>
-        <Shell />
+        <RosterProvider repo={localRoster}>
+          <Shell />
+        </RosterProvider>
       </AppDataProvider>
     );
   }
@@ -24,7 +30,9 @@ export default function App() {
       {(session) => (
         // 계정이 바뀌면 데이터를 처음부터 다시 불러온다
         <AppDataProvider key={session.user.id} repo={remoteRepo}>
-          <Shell />
+          <RosterProvider repo={remoteRoster}>
+            <Shell />
+          </RosterProvider>
         </AppDataProvider>
       )}
     </AuthGate>
@@ -38,7 +46,11 @@ function Shell() {
 
   return (
     <div className="min-h-dvh bg-stone-50">
-      <main className="mx-auto w-full max-w-[480px] px-3 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <main
+        className={`mx-auto w-full max-w-[480px] px-3 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] ${
+          tab.wide ? 'md:max-w-5xl' : ''
+        }`}
+      >
         <div key={`${tab.id}-${revision}`}>{tab.render(params)}</div>
       </main>
 
