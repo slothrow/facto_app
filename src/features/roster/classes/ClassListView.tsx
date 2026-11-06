@@ -19,6 +19,10 @@ import {
   compareClasses,
 } from '../rosterModel.ts';
 import { ClassForm } from './ClassForm.tsx';
+import { useAppData } from '../../../app/AppDataContext.tsx';
+import { formatProgress } from '../../../engine/curriculum.ts';
+import type { SessionLabel } from '../../../engine/types.ts';
+import { classProgressNow, courseMonthLabel, curriculumOf, currentSessionByWeekday } from '../../curriculum/curriculumModel.ts';
 import { TimetableGrid } from './TimetableGrid.tsx';
 
 export function ClassListView({ mode }: { mode?: string }) {
@@ -69,6 +73,11 @@ export function ClassListView({ mode }: { mode?: string }) {
       )}
 
       {timetable ? <TimetableGrid classes={active} /> : <ClassList classes={active} roster={roster} today={today} />}
+      {!timetable && (
+        <Button className="w-full" onClick={() => navigate('/roster/progress-import')}>
+          진도 일괄 입력
+        </Button>
+      )}
 
       {closed.length > 0 && (
         <div>
@@ -85,6 +94,8 @@ export function ClassListView({ mode }: { mode?: string }) {
 }
 
 function ClassList({ classes, roster, today, muted }: { classes: ClassRow[]; roster: RosterData; today: string; muted?: boolean }) {
+  const { data } = useAppData();
+  const current = useMemo(() => currentSessionByWeekday(data, today), [data, today]);
   return (
     <div className="space-y-4">
       {CLASS_WEEKDAYS.map((wd) => {
@@ -96,7 +107,7 @@ function ClassList({ classes, roster, today, muted }: { classes: ClassRow[]; ros
             <ul className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
               {list.map((c) => (
                 <li key={c.id} className="border-b border-stone-100 last:border-b-0">
-                  <ClassRowButton cls={c} roster={roster} today={today} muted={muted} />
+                  <ClassRowButton cls={c} roster={roster} today={today} muted={muted} current={current} />
                 </li>
               ))}
             </ul>
@@ -107,7 +118,21 @@ function ClassList({ classes, roster, today, muted }: { classes: ClassRow[]; ros
   );
 }
 
-function ClassRowButton({ cls, roster, today, muted }: { cls: ClassRow; roster: RosterData; today: string; muted?: boolean }) {
+function ClassRowButton({
+  cls,
+  roster,
+  today,
+  muted,
+  current,
+}: {
+  cls: ClassRow;
+  roster: RosterData;
+  today: string;
+  muted?: boolean;
+  current: Map<number, SessionLabel>;
+}) {
+  const { data } = useAppData();
+  const now = classProgressNow(roster, cls, current);
   const count = classHeadcount(roster, cls.id, today);
   const badges = classBadges(roster, cls, today);
   const waiting = muted ? 0 : waitlistMatchesForClass(roster, cls, today).length;
@@ -122,6 +147,12 @@ function ClassRowButton({ cls, roster, today, muted }: { cls: ClassRow; roster: 
           {formatTimeKo(cls.startTime)} <span className="text-emerald-800">{classGradeLabel(cls, today)}</span>
           {cls.alias && <span className="ml-1 text-stone-600">{cls.alias}</span>}
         </div>
+        {!muted && (
+          <div className={`text-sm ${now.progress.kind === 'unset' ? 'text-amber-700' : 'text-stone-600'}`}>
+            진도 <b>{formatProgress(now.progress, curriculumOf(data))}</b>
+            {now.session && now.progress.kind !== 'unset' && <> · {courseMonthLabel(now.session.courseMonth)}</>}
+          </div>
+        )}
         <div className="mt-0.5 flex flex-wrap gap-1">
           {badges.map((b) => (
             <span key={b.kind} className="rounded-full bg-amber-100 px-2 py-0.5 text-sm text-amber-900">

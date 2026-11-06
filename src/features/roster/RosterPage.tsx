@@ -8,6 +8,7 @@ import { ClassListView } from './classes/ClassListView.tsx';
 import { StudentCard } from './students/StudentCard.tsx';
 import { StudentListView } from './students/StudentListView.tsx';
 import { WaitlistView } from './waitlist/WaitlistView.tsx';
+import { ProgressImportView } from '../curriculum/ProgressImportView.tsx';
 
 const SECTIONS = [
   { id: 'classes', label: '시간표' },
@@ -20,7 +21,9 @@ export function RosterPage({ params }: { params: string[] }) {
 
   let section: (typeof SECTIONS)[number]['id'] = 'classes';
   let body: ReactNode;
-  if (view === 'class' && id) {
+  if (view === 'progress-import') {
+    body = <ProgressImportView />;
+  } else if (view === 'class' && id) {
     body = <ClassDetail classId={id} />;
   } else if (view === 'student' && id) {
     section = 'students';

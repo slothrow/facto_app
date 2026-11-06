@@ -1,5 +1,6 @@
 // 앱이 저장하는 데이터. SPEC 10.1 테이블과 1:1로 대응한다(4단계에서 Supabase 테이블이 된다).
 // 회차 결과는 저장하지 않고, 이 입력값으로 매번 엔진이 계산한다.
+import type { StageId, StageSetting } from '../engine/curriculum.ts';
 import type { DatedLabel, WeekNo, Weekday } from '../engine/types.ts';
 
 export interface AppSettings {
@@ -10,6 +11,8 @@ export interface AppSettings {
   operatingWeekdays: Weekday[];
   /** 앞섬/밀림 경고 기준 */
   offsetWarningThreshold: number;
+  /** 교육과정(단계 접두어·기본 학년). 3단계에 생긴 항목이라 없으면 기본값(withCurriculumDefaults) */
+  curriculum?: Partial<Record<StageId, Partial<StageSetting>>>;
 }
 
 /** track_anchors */

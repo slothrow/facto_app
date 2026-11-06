@@ -8,6 +8,7 @@ import { formatTimeKo, isClassActive } from '../../../engine/classTime.ts';
 import { CAPACITY, classBadges, classDisplayName, classEndTime, classHeadcount } from '../rosterModel.ts';
 import { ClassMembers } from './ClassMembers.tsx';
 import { ClassForm } from './ClassForm.tsx';
+import { ClassProgress } from '../../curriculum/ClassProgress.tsx';
 
 export function ClassDetail({ classId }: { classId: string }) {
   const { roster, mutate } = useRoster();
@@ -61,6 +62,8 @@ export function ClassDetail({ classId }: { classId: string }) {
       </Card>
 
       <ClassMembers cls={cls} />
+
+      <ClassProgress cls={cls} />
 
       {active ? (
         <Button variant="ghost" className="w-full text-red-700" onClick={() => setClosing(true)}>

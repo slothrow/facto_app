@@ -23,6 +23,7 @@ import { useRoster } from '../../app/RosterContext.tsx';
 import { STORAGE_KEY } from '../../storage/localStorageRepository.ts';
 import type { AppData, ClosureRow, TrackAnchorRow } from '../../storage/types.ts';
 import { useAuth } from '../auth/AuthGate.tsx';
+import { CurriculumSettingsSection } from '../curriculum/CurriculumSettingsSection.tsx';
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 const withDay = (date: string) => `${date.slice(0, 4)}.${md(date)} (${WEEKDAY_NAMES[weekdayOf(date)]})`;
@@ -40,6 +41,7 @@ export function SettingsPage() {
       <ClosuresSection />
       <NoticeSection />
       <ThresholdSection />
+      <CurriculumSettingsSection />
       <DataSection />
       <AccountSection />
       </div>

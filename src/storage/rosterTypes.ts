@@ -151,8 +151,8 @@ export interface AbsenceRow {
 // 3단계: 교육과정 진도 + 브리핑 (SPEC_briefing.md 8장)
 // ---------------------------------------------------------------
 
-/** 교육과정 단계. 순서 고정: 베이직 → K → P → A → B → S */
-export type StageId = 'basic' | 'K' | 'P' | 'A' | 'B' | 'S';
+export type { StageId } from '../engine/curriculum.ts';
+import type { StageId } from '../engine/curriculum.ts';
 
 /** 반 진도 기준점: 이 수업월에 이 단계 몇 단원. 베이직은 단원 없음(null) */
 export interface ProgressAnchorRow {
