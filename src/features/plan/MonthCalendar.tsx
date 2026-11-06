@@ -20,11 +20,14 @@ export function MonthCalendar({
   days,
   onSelect,
   notes,
+  today,
 }: {
   calendarMonth: string;
   days: DayCell[];
   onSelect: (cell: DayCell) => void;
   notes?: Map<string, PrivateNote[]>;
+  /** 오늘 날짜('YYYY-MM-DD'). 그 칸을 강조한다 */
+  today?: string;
 }) {
   const monthDays = days.filter((d) => monthOf(d.date) === calendarMonth);
   const lead = weekdayOf(monthStart(calendarMonth));
@@ -43,7 +46,7 @@ export function MonthCalendar({
       <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xl border border-stone-200 bg-stone-200">
         {cells.map((c, i) =>
           c ? (
-            <CalendarCell key={c.date} cell={c} calendarMonth={calendarMonth} onSelect={onSelect} notes={notes?.get(c.date)} />
+            <CalendarCell key={c.date} cell={c} calendarMonth={calendarMonth} onSelect={onSelect} notes={notes?.get(c.date)} isToday={c.date === today} />
           ) : (
             <div key={`blank-${i}`} className="min-h-[84px] bg-stone-50" />
           ),
@@ -58,11 +61,13 @@ function CalendarCell({
   calendarMonth,
   onSelect,
   notes,
+  isToday,
 }: {
   cell: DayCell;
   calendarMonth: string;
   onSelect: (cell: DayCell) => void;
   notes?: PrivateNote[];
+  isToday?: boolean;
 }) {
   const day = Number(cell.date.slice(8, 10));
   const red = cell.weekday === 0 || cell.status === 'holiday';
@@ -73,12 +78,21 @@ function CalendarCell({
     <button
       type="button"
       onClick={() => onSelect(cell)}
-      className="flex min-h-[84px] min-w-0 flex-col bg-white text-left active:bg-stone-100"
+      className={`flex min-h-[84px] min-w-0 flex-col text-left active:bg-stone-100 ${
+        isToday ? 'bg-emerald-50 ring-2 ring-inset ring-emerald-600' : 'bg-white'
+      }`}
       style={isSkipped ? { backgroundImage: HATCH } : undefined}
-      aria-label={cell.date}
+      aria-label={isToday ? `${cell.date} 오늘` : cell.date}
+      aria-current={isToday ? 'date' : undefined}
     >
       <div className="flex items-center justify-between px-1 pt-1">
-        <span className={`text-[15px] font-semibold leading-none ${dateColor}`}>{day}</span>
+        {isToday ? (
+          <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-emerald-700 px-1 text-[14px] font-bold leading-none text-white">
+            {day}
+          </span>
+        ) : (
+          <span className={`text-[15px] font-semibold leading-none ${dateColor}`}>{day}</span>
+        )}
         {cell.session?.pinned && <PinIcon className="h-3.5 w-3.5 text-stone-500" />}
       </div>
 

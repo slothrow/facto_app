@@ -40,7 +40,9 @@ function privateNotesFor(roster: RosterData, ym: string): Map<string, PrivateNot
 
 export function PlanPage({ month }: { month?: string }) {
   const { data, commit } = useAppData();
-  const ym = isYm(month) ? month : format(new Date(), 'yyyy-MM');
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const thisMonth = today.slice(0, 7);
+  const ym = isYm(month) ? month : thisMonth;
   const [year, mon] = [ym.slice(0, 4), monthName(ym)];
 
   const output = useMemo(() => scheduleFor(data, { from: monthStart(ym), to: monthEnd(ym) }), [data, ym]);
@@ -76,9 +78,20 @@ export function PlanPage({ month }: { month?: string }) {
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <div className="flex flex-col items-center">
-          <h1 className="text-xl font-bold">
-            {year}년 {mon}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">
+              {year}년 {mon}
+            </h1>
+            {ym !== thisMonth && (
+              <button
+                type="button"
+                onClick={() => navigate(`/plan/${thisMonth}`)}
+                className="min-h-[36px] rounded-full border border-emerald-700 px-3 text-sm font-semibold text-emerald-800 active:bg-emerald-50"
+              >
+                오늘
+              </button>
+            )}
+          </div>
           {confirmed ? (
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-sm font-medium text-emerald-800">
               <LockIcon className="h-3.5 w-3.5" /> 확정
@@ -92,7 +105,7 @@ export function PlanPage({ month }: { month?: string }) {
         </Button>
       </header>
 
-      <MonthCalendar calendarMonth={ym} days={output.days} onSelect={setSelected} notes={notes} />
+      <MonthCalendar calendarMonth={ym} days={output.days} onSelect={setSelected} notes={notes} today={today} />
       <WeekLegend />
       {notes.size > 0 && <p className="-mt-2 text-xs text-stone-500">하늘색(체험)·분홍색(보강 예약)은 선생님만 보이고 달력배포 이미지에는 들어가지 않아요.</p>}
 

@@ -7,11 +7,11 @@
 import { useState, type MouseEvent } from 'react';
 import { navigate } from '../../../app/router.ts';
 import { todayStr, useRoster } from '../../../app/RosterContext.tsx';
-import { BottomSheet, Button } from '../../../components/ui.tsx';
+import { BottomSheet, Button, Field, inputClass } from '../../../components/ui.tsx';
 import { CLASS_MINUTES, fromMinutes, shortTime, toMinutes } from '../../../engine/classTime.ts';
 import { weekdayOf } from '../../../engine/dates.ts';
 import type { Weekday } from '../../../engine/types.ts';
-import type { ClassRow, RosterData, StudentRow } from '../../../storage/rosterTypes.ts';
+import type { ClassRow, EnrollmentRow, RosterChange, RosterData, StudentRow } from '../../../storage/rosterTypes.ts';
 import { EnrollSheet } from '../students/EnrollSheet.tsx';
 import { StudentForm } from '../students/StudentForm.tsx';
 import { waitlistMatchesForClass } from '../waitlist/waitlistModel.ts';
@@ -98,6 +98,9 @@ export function TimetableGrid({ classes }: { classes: ClassRow[] }) {
         </div>
       </div>
       <p className="mt-2 text-center text-xs text-stone-500 md:text-sm">이름 → 수정·반 이동 · 반 머리 → 반 상세 · 빈 곳 → 반 추가</p>
+      <p className="mt-0.5 text-center text-xs text-stone-400 md:text-sm">
+        흐린 <span className="italic">+이름</span> = 적용일이 아직 안 된(들어올 예정인) 학생
+      </p>
 
       {picked && <StudentActions student={picked} onClose={() => setPicked(null)} />}
       {newAt && <ClassForm preset={newAt} onClose={() => setNewAt(null)} />}
@@ -233,15 +236,32 @@ function ClassCell({
 function StudentActions({ student, onClose }: { student: StudentRow; onClose: () => void }) {
   const { roster } = useRoster();
   const today = todayStr();
-  const [mode, setMode] = useState<'menu' | 'edit' | 'move'>('menu');
+  const [mode, setMode] = useState<'menu' | 'edit' | 'move' | 'date'>('menu');
   const s = roster.students.find((x) => x.id === student.id) ?? student;
+  // 지금 다니는 반이 없고 앞으로 들어갈 배정만 있으면 "예정"
+  const mine = roster.enrollments.filter((e) => e.studentId === s.id && (!e.endDate || e.endDate >= today));
+  const upcoming = mine.some((e) => e.startDate <= today)
+    ? null
+    : (mine.sort((a, b) => a.startDate.localeCompare(b.startDate))[0] ?? null);
+  const upcomingClass = upcoming ? roster.classes.find((c) => c.id === upcoming.classId) : null;
 
   if (mode === 'edit') return <StudentForm student={s} onClose={onClose} />;
   if (mode === 'move') return <EnrollSheet studentId={s.id} onClose={onClose} />;
+  if (mode === 'date' && upcoming) return <StartDateSheet student={s} enrollment={upcoming} onClose={onClose} />;
   return (
     <BottomSheet title={`${s.name} · ${studentGradeLabel(s, today)}`} onClose={onClose}>
       <div className="space-y-2">
         {s.notice && <p className="rounded-xl bg-yellow-50 p-3 text-base">📌 {s.notice}</p>}
+        {upcoming && (
+          <div className="space-y-2 rounded-xl bg-stone-100 p-3">
+            <p className="text-base">
+              <b>{formatMd(upcoming.startDate)}</b>부터 {upcomingClass ? classDisplayName(upcomingClass, upcoming.startDate) : '이 반'}에 들어올 예정이에요.
+            </p>
+            <Button className="w-full" onClick={() => setMode('date')}>
+              적용일 바꾸기
+            </Button>
+          </div>
+        )}
         <Button variant="primary" className="w-full" onClick={() => setMode('edit')}>
           정보 수정
         </Button>
@@ -256,6 +276,38 @@ function StudentActions({ student, onClose }: { student: StudentRow; onClose: ()
           }}
         >
           학생 카드 전체 보기
+        </Button>
+      </div>
+    </BottomSheet>
+  );
+}
+
+/** '2026-11-11' → '11/11(수)' */
+function formatMd(date: string) {
+  return `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}(${WEEKDAY_NAMES[weekdayOf(date)]})`;
+}
+
+/** 들어올 예정인 배정의 적용일(시작일) 바꾸기. 첫 수업일이 같은 날로 들어가 있었으면 함께 옮긴다 */
+function StartDateSheet({ student, enrollment, onClose }: { student: StudentRow; enrollment: EnrollmentRow; onClose: () => void }) {
+  const { mutate } = useRoster();
+  const [date, setDate] = useState(enrollment.startDate);
+  const invalid = !date || (!!enrollment.endDate && date > enrollment.endDate);
+
+  const save = async () => {
+    if (invalid) return;
+    const change: RosterChange = { upsert: { enrollments: [{ ...enrollment, startDate: date }] } };
+    if (student.firstClassOn === enrollment.startDate) change.upsert!.students = [{ ...student, firstClassOn: date }];
+    if (await mutate(change, '적용일을 바꿨어요')) onClose();
+  };
+
+  return (
+    <BottomSheet title={`${student.name} 적용일 바꾸기`} onClose={onClose}>
+      <div className="space-y-4">
+        <Field label="적용일" hint="이미 다니고 있으면 오늘이나 실제로 처음 온 날로 바꾸세요">
+          <input type="date" className={inputClass} value={date} onChange={(e) => setDate(e.target.value)} />
+        </Field>
+        <Button variant="primary" className="w-full" disabled={invalid} onClick={() => void save()}>
+          저장
         </Button>
       </div>
     </BottomSheet>
