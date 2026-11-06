@@ -46,11 +46,8 @@ function Shell() {
 
   return (
     <div className="min-h-dvh bg-stone-50">
-      <main
-        className={`mx-auto w-full max-w-[480px] px-3 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] ${
-          tab.wide ? 'md:max-w-5xl' : ''
-        }`}
-      >
+      {/* 폰: 480px 한 줄 / PC·태블릿(md 이상): 넓게 펼치고 화면마다 2단 배치 */}
+      <main className="mx-auto w-full max-w-[480px] px-3 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:max-w-5xl md:px-6 md:pt-6">
         <div key={`${tab.id}-${revision}`}>{tab.render(params)}</div>
       </main>
 
@@ -63,7 +60,7 @@ function Shell() {
       )}
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]">
-        <ul className="mx-auto flex max-w-[480px]">
+        <ul className="mx-auto flex max-w-[480px] md:max-w-2xl">
           {TABS.filter((t) => !t.hiddenUnder).map((t) => {
             const active = t.id === (tab.hiddenUnder ?? tab.id);
             const Icon = t.icon;

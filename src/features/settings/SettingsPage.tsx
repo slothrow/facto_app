@@ -31,6 +31,8 @@ export function SettingsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">설정</h1>
+      {/* PC: 카드들을 2단으로(위에서부터 채움) */}
+      <div className="space-y-4 md:columns-2 md:gap-4 md:space-y-0 md:*:mb-4 md:*:break-inside-avoid">
       <AcademySection />
       <OperatingDaysSection />
       <AnchorsSection />
@@ -40,6 +42,7 @@ export function SettingsPage() {
       <ThresholdSection />
       <DataSection />
       <AccountSection />
+      </div>
     </div>
   );
 }

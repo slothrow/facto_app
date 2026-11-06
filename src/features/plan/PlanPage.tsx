@@ -69,11 +69,13 @@ export function PlanPage({ month }: { month?: string }) {
 
   return (
     <div className="space-y-4">
-      <PlanSwitch active="plan" month={ym} />
-      <Button variant="primary" className="flex w-full items-center justify-center gap-2 text-lg" onClick={() => navigate(`/attend/${format(new Date(), 'yyyy-MM-dd')}`)}>
-        <CheckIcon className="h-6 w-6" /> 오늘 출석
-      </Button>
-      <header className="flex items-center justify-between gap-2">
+      <div className="md:max-w-md">
+        <PlanSwitch active="plan" month={ym} />
+      </div>
+      {/* 폰: 한 줄(order로 순서 지정) / PC: 왼쪽 큰 달력, 오른쪽 출석·요약·버튼 */}
+      <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-6">
+        <div className="contents md:col-start-1 md:row-start-1 md:flex md:flex-col md:gap-4">
+      <header className="order-2 flex items-center justify-between gap-2 md:order-none">
         <Button variant="ghost" onClick={() => go(-1)} aria-label="이전 달" className="px-2">
           <ChevronLeft className="h-6 w-6" />
         </Button>
@@ -105,11 +107,23 @@ export function PlanPage({ month }: { month?: string }) {
         </Button>
       </header>
 
-      <MonthCalendar calendarMonth={ym} days={output.days} onSelect={setSelected} notes={notes} today={today} />
-      <WeekLegend />
-      {notes.size > 0 && <p className="-mt-2 text-xs text-stone-500">하늘색(체험)·분홍색(보강 예약)은 선생님만 보이고 달력배포 이미지에는 들어가지 않아요.</p>}
+      <div className="order-3 md:order-none">
+        <MonthCalendar calendarMonth={ym} days={output.days} onSelect={setSelected} notes={notes} today={today} />
+      </div>
+      <div className="order-4 space-y-2 md:order-none">
+        <WeekLegend />
+        {notes.size > 0 && <p className="text-xs text-stone-500 md:text-sm">하늘색(체험)·분홍색(보강 예약)은 선생님만 보이고 달력배포 이미지에는 들어가지 않아요.</p>}
+      </div>
+        </div>
 
-      <SummaryCard summary={summary} threshold={data.settings.offsetWarningThreshold} />
+        <div className="contents md:sticky md:top-6 md:col-start-2 md:row-start-1 md:flex md:flex-col md:gap-4">
+      <Button variant="primary" className="order-1 flex w-full items-center justify-center gap-2 text-lg md:order-none" onClick={() => navigate(`/attend/${today}`)}>
+        <CheckIcon className="h-6 w-6" /> 오늘 출석
+      </Button>
+
+      <div className="order-5 md:order-none">
+        <SummaryCard summary={summary} threshold={data.settings.offsetWarningThreshold} />
+      </div>
 
       {warnings.length > 0 && (
         <Card
@@ -118,7 +132,7 @@ export function PlanPage({ month }: { month?: string }) {
               <AlertIcon className="h-5 w-5" /> 경고 {warnings.length}개
             </span>
           }
-          className="border-red-200 bg-red-50"
+          className="order-6 border-red-200 bg-red-50 md:order-none"
         >
           <ul className="space-y-1 text-base text-red-900">
             {warnings.map((w) => (
@@ -128,7 +142,7 @@ export function PlanPage({ month }: { month?: string }) {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="order-7 grid grid-cols-2 gap-2 md:order-none">
         <Button onClick={() => setClosureOpen(true)}>휴원 기간 추가</Button>
         {confirmed ? (
           <Button onClick={() => setDialog('unconfirm')}>확정 해제</Button>
@@ -137,6 +151,8 @@ export function PlanPage({ month }: { month?: string }) {
             이 달 확정
           </Button>
         )}
+      </div>
+        </div>
       </div>
 
       {selected && <DaySheet cell={selected} onClose={() => setSelected(null)} />}

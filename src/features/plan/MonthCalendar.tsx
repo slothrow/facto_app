@@ -36,7 +36,7 @@ export function MonthCalendar({
 
   return (
     <div>
-      <div className="grid grid-cols-7 text-center text-sm font-medium">
+      <div className="grid grid-cols-7 text-center text-sm font-medium md:text-base">
         {HEADERS.map((h, i) => (
           <div key={h} className={`py-1 ${i === 0 ? 'text-red-600' : i === 6 ? 'text-blue-600' : 'text-stone-600'}`}>
             {h}
@@ -48,7 +48,7 @@ export function MonthCalendar({
           c ? (
             <CalendarCell key={c.date} cell={c} calendarMonth={calendarMonth} onSelect={onSelect} notes={notes?.get(c.date)} isToday={c.date === today} />
           ) : (
-            <div key={`blank-${i}`} className="min-h-[84px] bg-stone-50" />
+            <div key={`blank-${i}`} className="min-h-[84px] bg-stone-50 md:min-h-[112px]" />
           ),
         )}
       </div>
@@ -78,34 +78,34 @@ function CalendarCell({
     <button
       type="button"
       onClick={() => onSelect(cell)}
-      className={`flex min-h-[84px] min-w-0 flex-col text-left active:bg-stone-100 ${
+      className={`flex min-h-[84px] min-w-0 flex-col text-left md:min-h-[112px] active:bg-stone-100 ${
         isToday ? 'bg-emerald-50 ring-2 ring-inset ring-emerald-600' : 'bg-white'
       }`}
       style={isSkipped ? { backgroundImage: HATCH } : undefined}
       aria-label={isToday ? `${cell.date} 오늘` : cell.date}
       aria-current={isToday ? 'date' : undefined}
     >
-      <div className="flex items-center justify-between px-1 pt-1">
+      <div className="flex items-center justify-between px-1 pt-1 md:px-2 md:pt-1.5">
         {isToday ? (
-          <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-emerald-700 px-1 text-[14px] font-bold leading-none text-white">
+          <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-emerald-700 px-1 text-[14px] font-bold leading-none text-white md:h-7 md:min-w-7 md:text-lg">
             {day}
           </span>
         ) : (
-          <span className={`text-[15px] font-semibold leading-none ${dateColor}`}>{day}</span>
+          <span className={`text-[15px] font-semibold leading-none md:text-lg ${dateColor}`}>{day}</span>
         )}
         {cell.session?.pinned && <PinIcon className="h-3.5 w-3.5 text-stone-500" />}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 px-1 pt-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 px-1 pt-1 md:gap-1 md:px-1.5">
         {cell.holidayName && (
-          <span className="line-clamp-2 text-[11px] leading-tight text-red-600">{cell.holidayName}</span>
+          <span className="line-clamp-2 text-[11px] leading-tight text-red-600 md:text-[13px]">{cell.holidayName}</span>
         )}
         {cell.closureLabel && (
-          <span className="line-clamp-2 text-[11px] leading-tight text-stone-500">{cell.closureLabel}</span>
+          <span className="line-clamp-2 text-[11px] leading-tight text-stone-500 md:text-[13px]">{cell.closureLabel}</span>
         )}
-        {isSkipped && <span className="text-[12px] font-medium text-stone-500">비움</span>}
+        {isSkipped && <span className="text-[12px] font-medium text-stone-500 md:text-sm">비움</span>}
         {cell.events.map((e) => (
-          <span key={e} className="flex min-w-0 items-start gap-0.5 text-[10px] leading-tight text-amber-800">
+          <span key={e} className="flex min-w-0 items-start gap-0.5 text-[10px] leading-tight text-amber-800 md:text-xs">
             <span className="mt-[3px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
             <span className="line-clamp-2">{e}</span>
           </span>
@@ -113,7 +113,7 @@ function CalendarCell({
         {notes?.map((n, i) => (
           <span
             key={i}
-            className={`block min-w-0 rounded px-0.5 py-px text-[10px] leading-tight ${
+            className={`block min-w-0 rounded px-0.5 py-px text-[10px] leading-tight md:px-1 md:py-0.5 md:text-xs ${
               n.kind === 'trial' ? 'bg-sky-100 text-sky-900' : 'bg-fuchsia-100 text-fuchsia-900'
             }`}
           >
@@ -128,7 +128,7 @@ function CalendarCell({
 
       {cell.status === 'session' && cell.session && (
         <span
-          className="block truncate px-0.5 py-1 text-center text-[12px] font-semibold leading-tight text-stone-800"
+          className="block truncate px-0.5 py-1 text-center text-[12px] font-semibold leading-tight text-stone-800 md:py-1.5 md:text-sm"
           style={{ background: WEEK_COLORS[cell.session.weekNo] }}
         >
           {formatCellLabel(cell.session, calendarMonth)}
@@ -136,7 +136,7 @@ function CalendarCell({
       )}
       {cell.status === 'makeup' && (
         <span
-          className="block truncate px-0.5 py-1 text-center text-[11px] font-semibold leading-tight text-white"
+          className="block truncate px-0.5 py-1 text-center text-[11px] font-semibold leading-tight text-white md:py-1.5 md:text-sm"
           style={{ background: MAKEUP_COLOR }}
         >
           보강수업
@@ -155,7 +155,7 @@ export function WeekLegend() {
     ['보강수업', MAKEUP_COLOR, '#fff'],
   ];
   return (
-    <div className="flex flex-wrap gap-1.5 text-xs">
+    <div className="flex flex-wrap gap-1.5 text-xs md:text-sm">
       {items.map(([label, bg, fg]) => (
         <span key={label} className="rounded-md px-2 py-1 font-medium" style={{ background: bg, color: fg }}>
           {label}

@@ -121,7 +121,10 @@ export function ExportPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">달력 만들기</h1>
 
-      <Card>
+      {/* 폰: 한 줄(order로 순서 지정) / PC: 왼쪽 미리보기, 오른쪽 기간·문구·기록 */}
+      <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_380px] md:items-start md:gap-6">
+      <div className="contents md:col-start-2 md:row-start-1 md:flex md:flex-col md:gap-4">
+      <Card className="order-1 md:order-none">
         <Field label="기간(두 달)">
           <select className={inputClass} value={startMonth} onChange={(e) => changeStart(e.target.value)}>
             {monthOptions.map((ym) => (
@@ -139,7 +142,7 @@ export function ExportPage() {
         )}
       </Card>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="order-2 grid grid-cols-2 gap-2 md:order-none">
         <Button
           variant={layout === 'side' ? 'primary' : 'secondary'}
           onClick={() => chooseLayout('side')}
@@ -162,40 +165,8 @@ export function ExportPage() {
         </Button>
       </div>
 
-      <ScaledPreview width={POSTER_WIDTH} height={H}>
-        <Poster
-          ref={posterRef}
-          academyName={data.settings.academyName}
-          slogan={data.settings.slogan}
-          title={title}
-          highlight={highlight}
-          notice={notice}
-          startMonth={startMonth}
-          days={output.days}
-          events={eventMap}
-          ratio={ratio}
-          layout={layout}
-          onOverflow={setOverflow}
-        />
-      </ScaledPreview>
 
-      {overflow && (
-        <p className="flex items-start gap-1.5 rounded-xl bg-red-50 p-3 text-base text-red-800">
-          <AlertIcon className="mt-0.5 h-5 w-5 shrink-0" />
-          내용이 이미지 밖으로 넘칩니다. 안내 문구를 줄이거나 세로형 4:5를 써 보세요.
-        </p>
-      )}
-
-      <div className="grid grid-cols-2 gap-2">
-        <Button onClick={() => run('save')} disabled={busy !== null}>
-          {busy === 'save' ? '만드는 중…' : '이미지 저장'}
-        </Button>
-        <Button variant="primary" onClick={() => run('share')} disabled={busy !== null}>
-          {busy === 'share' ? '만드는 중…' : '공유하기'}
-        </Button>
-      </div>
-
-      <Card title="문구">
+      <Card title="문구" className="order-4 md:order-none">
         <div className="space-y-3">
           <Field label="제목">
             <input
@@ -230,7 +201,7 @@ export function ExportPage() {
         </div>
       </Card>
 
-      <Card title="행사 표시">
+      <Card title="행사 표시" className="order-5 md:order-none">
         {periodEvents.length === 0 ? (
           <p className="text-stone-500">이 기간에 등록된 행사가 없습니다.</p>
         ) : (
@@ -259,7 +230,7 @@ export function ExportPage() {
         )}
       </Card>
 
-      <Card title="내보낸 기록">
+      <Card title="내보낸 기록" className="order-6 md:order-none">
         {data.exportHistory.length === 0 ? (
           <p className="text-stone-500">아직 없습니다. 이미지를 저장하거나 공유하면 여기에 남습니다.</p>
         ) : (
@@ -280,6 +251,43 @@ export function ExportPage() {
           </ul>
         )}
       </Card>
+      </div>
+
+      <div className="order-3 space-y-4 md:order-none md:col-start-1 md:row-start-1">
+      <ScaledPreview width={POSTER_WIDTH} height={H}>
+        <Poster
+          ref={posterRef}
+          academyName={data.settings.academyName}
+          slogan={data.settings.slogan}
+          title={title}
+          highlight={highlight}
+          notice={notice}
+          startMonth={startMonth}
+          days={output.days}
+          events={eventMap}
+          ratio={ratio}
+          layout={layout}
+          onOverflow={setOverflow}
+        />
+      </ScaledPreview>
+
+      {overflow && (
+        <p className="flex items-start gap-1.5 rounded-xl bg-red-50 p-3 text-base text-red-800">
+          <AlertIcon className="mt-0.5 h-5 w-5 shrink-0" />
+          내용이 이미지 밖으로 넘칩니다. 안내 문구를 줄이거나 세로형 4:5를 써 보세요.
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <Button onClick={() => run('save')} disabled={busy !== null}>
+          {busy === 'save' ? '만드는 중…' : '이미지 저장'}
+        </Button>
+        <Button variant="primary" onClick={() => run('share')} disabled={busy !== null}>
+          {busy === 'share' ? '만드는 중…' : '공유하기'}
+        </Button>
+      </div>
+      </div>
+      </div>
     </div>
   );
 }

@@ -30,7 +30,9 @@ export function MakeupPage({ month }: { month?: string }) {
 
   return (
     <div className="space-y-4">
-      <PlanSwitch active="makeup" month={ym} />
+      <div className="md:max-w-md">
+        <PlanSwitch active="makeup" month={ym} />
+      </div>
       <header className="flex items-center justify-between gap-2">
         <Button variant="ghost" className="px-2" aria-label="이전 달" onClick={() => navigate(`/makeup/${addMonthsYm(ym, -1)}`)}>
           <ChevronLeft className="h-6 w-6" />
@@ -49,6 +51,8 @@ export function MakeupPage({ month }: { month?: string }) {
         </Card>
       )}
 
+      {/* PC: 보강데이 카드와 미정 학생을 2열로 */}
+      <div className="space-y-4 md:grid md:grid-cols-2 md:items-start md:gap-4 md:space-y-0">
       {m.days.map((d) => {
         const booked = d.slots.filter((s) => s.booking).length;
         return (
@@ -118,6 +122,8 @@ export function MakeupPage({ month }: { month?: string }) {
           </ul>
         )}
       </Card>
+
+      </div>
 
       {picking && <PickSheet picking={picking} month={m} onClose={() => setPicking(null)} />}
     </div>

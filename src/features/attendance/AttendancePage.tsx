@@ -56,7 +56,7 @@ function DayClassList({ date }: { date: string }) {
           <p className="py-6 text-center text-base text-stone-500">이 요일에 운영하는 반이 없어요.</p>
         </Card>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 lg:grid-cols-3">
           {classes.map((c) => {
             const list = attendanceList(roster, c.id, date);
             const absent = list.filter((e) => e.absent).length;
@@ -81,7 +81,7 @@ function DayClassList({ date }: { date: string }) {
           })}
         </ul>
       )}
-      <Button variant="ghost" className="w-full" onClick={() => navigate(`/plan/${date.slice(0, 7)}`)}>
+      <Button variant="ghost" className="w-full md:mx-auto md:block md:w-auto md:px-6" onClick={() => navigate(`/plan/${date.slice(0, 7)}`)}>
         회차 계획 달력으로
       </Button>
     </div>
@@ -114,7 +114,7 @@ function ClassAttendance({ date, classId }: { date: string; classId: string }) {
           <p className="text-base text-stone-500">이 날 명단이 비어 있어요.</p>
         </Card>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0">
           {list.map((e) =>
             e.kind === 'student' ? (
               <li key={e.id}>
@@ -147,7 +147,7 @@ function ClassAttendance({ date, classId }: { date: string; classId: string }) {
           )}
         </ul>
       )}
-      <Button className="w-full" onClick={() => setAddingTrial(true)}>
+      <Button className="w-full md:w-auto md:px-6" onClick={() => setAddingTrial(true)}>
         이 반에 체험수업 기록
       </Button>
       {addingTrial && <TrialForm presetDate={date} presetClassId={classId} onClose={() => setAddingTrial(false)} />}
