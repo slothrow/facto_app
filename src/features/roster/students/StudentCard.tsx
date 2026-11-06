@@ -160,6 +160,7 @@ function BasicInfo({ s, onEdit }: { s: StudentRow; onEdit: () => void }) {
     ['생일', s.birthday],
     ['학년', s.gradeAdjust ? `${studentGradeLabel(s, today)} (보정 ${s.gradeAdjust > 0 ? '+1' : '-1'})` : null],
     ['학교', s.school],
+    ['카톡 검색어', s.kakaoSearch || <span className="text-stone-400">{s.name} (이름)</span>],
     ...s.guardians.map(
       (g, i) =>
         [

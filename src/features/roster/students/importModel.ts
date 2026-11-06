@@ -34,7 +34,8 @@ export type ImportField =
   | 'classGrade'
   | 'status'
   | 'memo'
-  | 'needsReview';
+  | 'needsReview'
+  | 'kakaoSearch';
 
 /** 자동 매칭되는 열 이름(SPEC 5.1) */
 export const FIELD_LABEL: Record<ImportField, string> = {
@@ -55,6 +56,7 @@ export const FIELD_LABEL: Record<ImportField, string> = {
   status: '상태',
   memo: '메모',
   needsReview: '확인필요',
+  kakaoSearch: '카톡검색어',
 };
 
 export const IMPORT_FIELDS = Object.keys(FIELD_LABEL) as ImportField[];
@@ -281,6 +283,7 @@ export function buildImportPlan(
     }
     s.gender = parseGender(get(r, 'gender'));
     s.school = get(r, 'school') || null;
+    s.kakaoSearch = get(r, 'kakaoSearch') || null;
     s.address = get(r, 'address') || null;
     const reg = get(r, 'registeredOn');
     if (reg) s.registeredOn = parseDate(reg) ?? today;
@@ -339,7 +342,16 @@ export function planToChange(plan: ImportPlan, skip: Set<number>, roster: Roster
     .filter((r) => r.classKey && r.student.status !== 'left')
     .map((r) => ({ id: newId(), studentId: r.student.id, classId: classIdOf(r.classKey!), startDate: startDate, endDate: null }));
 
-  return { upsert: { classes, students: rows.map((r) => r.student), enrollments } };
+  // 이미 있는 학생(이름이 같아 건너뛴 줄)은 카톡 검색어만 채운다. 같은 이름이 둘 이상이면 건드리지 않는다
+  const kakaoUpdates: StudentRow[] = [];
+  for (const r of plan.rows) {
+    if (!skip.has(r.line) || !r.duplicate || !r.student.kakaoSearch) continue;
+    const norm = r.student.name.replace(/s/g, '');
+    const same = roster.students.filter((x) => x.name.replace(/s/g, '') === norm);
+    if (same.length === 1 && same[0].kakaoSearch !== r.student.kakaoSearch) kakaoUpdates.push({ ...same[0], kakaoSearch: r.student.kakaoSearch });
+  }
+
+  return { upsert: { classes, students: [...rows.map((r) => r.student), ...kakaoUpdates], enrollments } };
 }
 
 export const sortTimes = (a: string, b: string) => toMinutes(a) - toMinutes(b);

@@ -166,6 +166,18 @@ describe('가져오기 (SPEC 5.1)', () => {
     expect(plan.rows[0].classKey).toBe('x');
   });
 
+  it('카톡검색어 열: 새 학생은 그대로, 이름이 같아 건너뛴 기존 학생은 카톡 검색어만 채운다', () => {
+    const existing = { ...emptyRoster(), students: [{ ...blankStudent('가나', today), id: 'old' }] };
+    const t = parseTable('이름,카톡검색어\n가나,가나 7세\n다라,다라맘');
+    const plan = buildImportPlan(t, autoMap(t[0]), existing, today, 2026);
+    const skip = new Set(plan.rows.filter((r) => r.duplicate).map((r) => r.line));
+    const students = planToChange(plan, skip, existing, today).upsert!.students!;
+    expect(students.map((s) => [s.name, s.kakaoSearch, s.id === 'old'])).toEqual([
+      ['다라', '다라맘', false],
+      ['가나', '가나 7세', true],
+    ]);
+  });
+
   // 실제 초기 명단(이 PC에만 있음, git 제외). 완료 기준: 반 14개, 학생 55명, 확인 필요 9명
   const ROSTER_FILE = 'data/initial_roster.csv';
   it.skipIf(!existsSync(ROSTER_FILE))('초기 명단: 반 14개, 학생 55명, 확인 필요 9명', () => {

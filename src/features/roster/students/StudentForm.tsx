@@ -142,6 +142,9 @@ export function StudentForm({ student, onClose }: { student: StudentRow; onClose
           <Field label="다니는 학교·유치원">
             <input className={inputClass} value={s.school ?? ''} onChange={(e) => set('school', txt(e.target.value))} />
           </Field>
+          <Field label="카톡 검색어" hint="카톡 대화방을 찾을 때 쓰는 말(예: 홍길동 7세). 비우면 이름으로 찾아요.">
+            <input className={inputClass} value={s.kakaoSearch ?? ''} placeholder={s.name || '이름'} onChange={(e) => set('kakaoSearch', txt(e.target.value))} />
+          </Field>
         </Section>
 
         <Section title="연락처">
