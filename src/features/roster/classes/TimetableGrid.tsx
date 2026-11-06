@@ -1,5 +1,6 @@
 // 한 페이지 주간 시간표: 월~금 × 1:30~5:30. 반은 시작 시간에 맞춰 10분 단위로 위치를 잡는다
 // (1:40반은 1:30반보다 10분만큼 아래, 새 줄을 만들지 않음). 칸마다 반 학년·인원과 아이 이름.
+// 왼쪽 눈금은 정시 반 시간만. 40분 시작 같은 반은 칸 머리에 시작 시간을 하늘색으로 적는다.
 // 폰(360px)에서도 가로 스크롤 없이 한 화면에 들어가게 작은 글씨로 그린다.
 // - 이름 탭 → 정보 수정 / 반 이동 / 학생 카드
 // - 반 머리(학년·인원) 탭 → 반 상세
@@ -43,9 +44,8 @@ export function TimetableGrid({ classes }: { classes: ClassRow[] }) {
   const range = timetableRange(classes);
   const [picked, setPicked] = useState<StudentRow | null>(null);
   const [newAt, setNewAt] = useState<{ weekday: Weekday; startTime: string } | null>(null);
+  // 왼쪽 눈금은 기본 시간(정시 반)만. 기본 시간이 아닌 반(예: 3:40)은 반 칸 머리에 시간을 적는다
   const labels = STANDARD_SLOTS.filter((t) => toMinutes(t) >= range.start && toMinutes(t) < range.end);
-  // 기본 시간이 아닌 반(예: 1:40)은 왼쪽 눈금에 따로 작게 표시
-  const extraLabels = [...new Set(classes.map((c) => c.startTime))].filter((t) => !STANDARD_SLOTS.includes(t));
 
   return (
     <>
@@ -67,15 +67,6 @@ export function TimetableGrid({ classes }: { classes: ClassRow[] }) {
               <span
                 key={t}
                 className="absolute right-0.5 text-xs leading-none font-semibold text-stone-500 md:text-sm"
-                style={{ top: px(toMinutes(t) - range.start + 3) }}
-              >
-                {shortTime(t)}
-              </span>
-            ))}
-            {extraLabels.map((t) => (
-              <span
-                key={t}
-                className="absolute right-0.5 text-[10px] leading-none font-semibold text-sky-700 md:text-xs"
                 style={{ top: px(toMinutes(t) - range.start + 3) }}
               >
                 {shortTime(t)}
@@ -194,8 +185,16 @@ function ClassCell({
         className={`mb-0.5 flex w-full items-baseline justify-between gap-0.5 px-1 py-px text-left ${warn ? 'bg-amber-50' : 'bg-emerald-50'}`}
         aria-label={`${classDisplayName(cls, today)} 반 상세`}
       >
-        <span className="truncate text-xs font-bold text-emerald-900 md:text-sm">
-          {cls.gradeCode === null ? '미정' : classGradeLabel(cls, today)}
+        {/* 기본 시간이 아닌 반: 폰은 학년 위 작은 줄, PC는 학년 앞에 시간 */}
+        <span className="flex min-w-0 flex-col md:flex-row md:items-baseline md:gap-1">
+          {!STANDARD_SLOTS.includes(cls.startTime) && (
+            <span className="self-start rounded bg-sky-100 px-0.5 text-[10px] font-bold leading-tight text-sky-800 md:shrink-0 md:px-1 md:text-xs">
+              {shortTime(cls.startTime)}
+            </span>
+          )}
+          <span className="truncate text-xs font-bold text-emerald-900 md:text-sm">
+            {cls.gradeCode === null ? '미정' : classGradeLabel(cls, today)}
+          </span>
         </span>
         <span className={`shrink-0 text-[11px] font-semibold md:text-xs ${countColor}`}>
           {count}/{CAPACITY}
