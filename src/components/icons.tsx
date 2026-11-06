@@ -102,3 +102,19 @@ export const CheckIcon = ({ className }: P) => (
     <path d="m5 12 5 5L20 7" />
   </svg>
 );
+
+export const ChatIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-9l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
+    <path d="M8 10h8M8 13h5" />
+  </svg>
+);
+
+export const ShareIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <circle cx="18" cy="5" r="2.5" />
+    <circle cx="6" cy="12" r="2.5" />
+    <circle cx="18" cy="19" r="2.5" />
+    <path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4" />
+  </svg>
+);

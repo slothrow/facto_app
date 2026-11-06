@@ -1,6 +1,7 @@
 // 하단 탭 설정. 새 탭(반 편성, 학생 등록 등)은 이 배열에 한 줄 추가하면 된다.
 import type { ComponentType, ReactNode } from 'react';
-import { CalendarIcon, GearIcon, ImageIcon, UsersIcon } from '../components/icons.tsx';
+import { CalendarIcon, ChatIcon, GearIcon, ImageIcon, UsersIcon } from '../components/icons.tsx';
+import { BriefingPage } from '../features/briefing/BriefingPage.tsx';
 import { AttendancePage } from '../features/attendance/AttendancePage.tsx';
 import { ExportPage } from '../features/export/ExportPage.tsx';
 import { MakeupPage } from '../features/makeup/MakeupPage.tsx';
@@ -20,6 +21,7 @@ export interface TabDef {
 }
 
 export const TABS: TabDef[] = [
+  { id: 'briefing', label: '브리핑', icon: ChatIcon, render: (params) => <BriefingPage params={params} /> },
   { id: 'roster', label: '시간표', icon: UsersIcon, render: (params) => <RosterPage params={params} /> },
   { id: 'plan', label: '달력', icon: CalendarIcon, render: ([month]) => <PlanPage month={month} /> },
   { id: 'export', label: '달력배포', icon: ImageIcon, render: () => <ExportPage /> },
