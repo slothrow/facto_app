@@ -409,7 +409,7 @@ function DataSection() {
           초기 데이터 불러오기
         </Button>
         {auth && localBackup && (
-          <Button className="w-full" onClick={() => setPendingRestore({ app: localBackup, roster: null })}>
+          <Button className="w-full" onClick={() => setPendingRestore({ app: localBackup, roster: null, rosterMissing: [] })}>
             이 기기의 예전 데이터 가져오기
           </Button>
         )}
@@ -437,7 +437,9 @@ function DataSection() {
             const ok = await replaceAll(p.app, '백업으로 복원했어요');
             if (ok && p.roster) {
               try {
-                await replaceRoster(p.roster);
+                // 예전 백업에 없던 브리핑 문구는 지금 문구를 그대로 둔다(반·학생과 무관한 자료)
+                const restored = p.rosterMissing.includes('briefingTexts') ? { ...p.roster, briefingTexts: roster.briefingTexts } : p.roster;
+                await replaceRoster(restored);
               } catch (e) {
                 showToast(`학생 데이터를 복원하지 못했어요: ${e instanceof Error ? e.message : String(e)}`);
               }

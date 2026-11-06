@@ -62,6 +62,8 @@ export interface StudentRow {
   /** 특이사항(카드 맨 위 고정 메모) */
   notice: string | null;
   needsReview: boolean;
+  /** 카톡 대화방 검색어(예: "홍길동 7세"). 비우면 이름을 쓴다. 3단계에 생긴 칸이라 예전 데이터엔 없을 수 있다 */
+  kakaoSearch?: string | null;
 }
 
 /** 한 쌍을 한 줄로. studentId < siblingId */
@@ -145,6 +147,51 @@ export interface AbsenceRow {
   studentId: string;
 }
 
+// ---------------------------------------------------------------
+// 3단계: 교육과정 진도 + 브리핑 (SPEC_briefing.md 8장)
+// ---------------------------------------------------------------
+
+/** 교육과정 단계. 순서 고정: 베이직 → K → P → A → B → S */
+export type StageId = 'basic' | 'K' | 'P' | 'A' | 'B' | 'S';
+
+/** 반 진도 기준점: 이 수업월에 이 단계 몇 단원. 베이직은 단원 없음(null) */
+export interface ProgressAnchorRow {
+  id: string;
+  classId: string;
+  courseMonth: string;
+  stage: StageId;
+  unit: number | null;
+  memo: string | null;
+}
+
+/** 베이직 수업 계획: (반, 날짜)별 제목·브리핑 문구 */
+export interface BasicLessonRow {
+  id: string;
+  classId: string;
+  date: string;
+  title: string;
+  text: string;
+}
+
+/** 브리핑 문구 저장소: 코드당 문구 1개 */
+export interface BriefingTextRow {
+  code: string;
+  text: string;
+}
+
+/** 보낸 기록. textSnapshot = 실제로 보낸 문구 */
+export interface BriefingRow {
+  id: string;
+  date: string;
+  classId: string;
+  studentId: string;
+  code: string;
+  textSnapshot: string;
+  /** ISO 시각 */
+  sharedAt: string;
+  sharedBy?: string | null;
+}
+
 export interface RosterData {
   classes: ClassRow[];
   students: StudentRow[];
@@ -155,6 +202,10 @@ export interface RosterData {
   trialLessons: TrialLessonRow[];
   absences: AbsenceRow[];
   makeupBookings: MakeupBookingRow[];
+  progressAnchors: ProgressAnchorRow[];
+  basicLessons: BasicLessonRow[];
+  briefingTexts: BriefingTextRow[];
+  briefings: BriefingRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -170,6 +221,10 @@ export const ROSTER_KEYS: RosterKey[] = [
   'trialLessons',
   'absences',
   'makeupBookings',
+  'progressAnchors',
+  'basicLessons',
+  'briefingTexts',
+  'briefings',
 ];
 
 export const emptyRoster = (): RosterData => ({
@@ -182,6 +237,10 @@ export const emptyRoster = (): RosterData => ({
   trialLessons: [],
   absences: [],
   makeupBookings: [],
+  progressAnchors: [],
+  basicLessons: [],
+  briefingTexts: [],
+  briefings: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];
@@ -197,6 +256,8 @@ export function rowKey<K extends RosterKey>(key: K, row: RowOf<K>): string {
       const r = row as AbsenceRow;
       return `${r.date}|${r.classId}|${r.studentId}`;
     }
+    case 'briefingTexts':
+      return (row as BriefingTextRow).code;
     default:
       return (row as { id: string }).id;
   }

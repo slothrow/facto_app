@@ -33,6 +33,10 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   trialLessons: 'trial_lessons',
   absences: 'absences',
   makeupBookings: 'makeup_bookings',
+  progressAnchors: 'class_progress_anchors',
+  basicLessons: 'basic_lesson_plans',
+  briefingTexts: 'briefing_texts',
+  briefings: 'briefings',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -46,6 +50,10 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   trialLessons: ['id'],
   absences: ['date', 'class_id', 'student_id'],
   makeupBookings: ['id'],
+  progressAnchors: ['id'],
+  basicLessons: ['id'],
+  briefingTexts: ['code'],
+  briefings: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);
