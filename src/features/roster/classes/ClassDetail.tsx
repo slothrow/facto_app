@@ -9,6 +9,7 @@ import { CAPACITY, classBadges, classDisplayName, classEndTime, classHeadcount }
 import { ClassMembers } from './ClassMembers.tsx';
 import { ClassForm } from './ClassForm.tsx';
 import { ClassProgress } from '../../curriculum/ClassProgress.tsx';
+import { ClassBriefingStatus } from '../../briefing/LearnedSections.tsx';
 
 export function ClassDetail({ classId }: { classId: string }) {
   const { roster, mutate } = useRoster();
@@ -64,6 +65,7 @@ export function ClassDetail({ classId }: { classId: string }) {
       <ClassMembers cls={cls} />
 
       <ClassProgress cls={cls} />
+      <ClassBriefingStatus cls={cls} />
 
       {active ? (
         <Button variant="ghost" className="w-full text-red-700" onClick={() => setClosing(true)}>

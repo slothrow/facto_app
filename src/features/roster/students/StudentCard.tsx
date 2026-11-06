@@ -8,6 +8,7 @@ import { newId, type CounselingNoteRow, type CounselingType, type StudentRow } f
 import { WEEKDAY_NAMES, classDisplayName, currentEnrollment, studentGradeLabel, studentStatusOn } from '../rosterModel.ts';
 import { EnrollSheet } from './EnrollSheet.tsx';
 import { StudentForm } from './StudentForm.tsx';
+import { LearnedSection } from '../../briefing/LearnedSections.tsx';
 import {
   COUNSELING_LABEL,
   RELATION_LABEL,
@@ -102,6 +103,7 @@ export function StudentCard({ studentId, mode }: { studentId: string; mode?: str
       </Card>
 
       <Counseling student={s} />
+      <LearnedSection studentId={s.id} />
       <AbsenceSummary studentId={s.id} />
       <DeleteStudent student={s} />
 
