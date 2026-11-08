@@ -1,5 +1,6 @@
-// 반·학생 탭. 상단 전환: [반] [학생] [대기자]
-// 주소: #/roster/classes, #/roster/students, #/roster/waitlist, #/roster/class/<id>, #/roster/student/<id>
+// 반·학생 탭. 상단 전환: [시간표] [학생] [대기자] [편성]
+// 주소: #/roster/classes, #/roster/students, #/roster/waitlist, #/roster/class/<id>, #/roster/student/<id>,
+// #/roster/sim(시안 목록), #/roster/sim/<시안 id>, #/roster/sim-compare
 // (주소에는 id만 넣는다. 이름은 넣지 않는다)
 import type { ReactNode } from 'react';
 import { navigate } from '../../app/router.ts';
@@ -9,11 +10,14 @@ import { StudentCard } from './students/StudentCard.tsx';
 import { StudentListView } from './students/StudentListView.tsx';
 import { WaitlistView } from './waitlist/WaitlistView.tsx';
 import { ProgressImportView } from '../curriculum/ProgressImportView.tsx';
+import { DraftEditor } from '../simulator/DraftEditor.tsx';
+import { DraftListView } from '../simulator/DraftListView.tsx';
 
 const SECTIONS = [
   { id: 'classes', label: '시간표' },
   { id: 'students', label: '학생' },
   { id: 'waitlist', label: '대기자' },
+  { id: 'sim', label: '편성' },
 ] as const;
 
 export function RosterPage({ params }: { params: string[] }) {
@@ -21,7 +25,13 @@ export function RosterPage({ params }: { params: string[] }) {
 
   let section: (typeof SECTIONS)[number]['id'] = 'classes';
   let body: ReactNode;
-  if (view === 'progress-import') {
+  if (view === 'sim' && id) {
+    section = 'sim';
+    body = <DraftEditor key={id} draftId={id} />;
+  } else if (view === 'sim') {
+    section = 'sim';
+    body = <DraftListView />;
+  } else if (view === 'progress-import') {
     body = <ProgressImportView />;
   } else if (view === 'class' && id) {
     body = <ClassDetail classId={id} />;
@@ -40,7 +50,7 @@ export function RosterPage({ params }: { params: string[] }) {
 
   return (
     <div className="space-y-4">
-      <div role="tablist" className="grid grid-cols-3 gap-1 rounded-2xl bg-stone-200/70 p-1 md:max-w-md">
+      <div role="tablist" className="grid grid-cols-4 gap-1 rounded-2xl bg-stone-200/70 p-1 md:max-w-lg">
         {SECTIONS.map((s) => (
           <button
             key={s.id}
