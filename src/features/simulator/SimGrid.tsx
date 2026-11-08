@@ -1,6 +1,8 @@
 // 시안 시간표 격자(SPEC_simulator 3.1·3.2). 열 = 요일, 행 = 10분 단위.
 // 반 블록 높이 = 50분, 정시가 아닌 반(예: 3:40)도 정확한 위치. 옮긴 반은 원래 자리에 점선 흔적.
 // 반을 선택하면 시작 칸을 초록(가능)·노랑(경고)·회색(불가)으로 칠한다.
+// 드래그(dnd-kit): 반 블록 = 끌 수 있고 합치기 대상, 10분 칸 = 놓는 곳. DndContext 안에서만 쓴다.
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import type { MouseEvent, ReactNode } from 'react';
 import { CLASS_MINUTES, fromMinutes, shortTime, toMinutes } from '../../engine/classTime.ts';
 import type { Placement } from '../../engine/simulator/index.ts';
@@ -47,8 +49,9 @@ export function SimGrid({
   compact,
   onCell,
   onBlock,
-  renderBlock,
-  renderCell,
+  preview,
+  draggingId,
+  dragDisabled,
 }: {
   days: Weekday[];
   range: { start: number; end: number };
@@ -62,9 +65,10 @@ export function SimGrid({
   compact: boolean;
   onCell: (weekday: Weekday, start: string) => void;
   onBlock: (id: string, tappedStart: string) => void;
-  /** 드래그 기능이 블록·칸을 감싸는 자리 */
-  renderBlock?: (b: BlockView, node: ReactNode) => ReactNode;
-  renderCell?: (weekday: Weekday, start: string, node: ReactNode) => ReactNode;
+  /** 끄는 중: 놓일 자리 미리보기 */
+  preview?: { weekday: number; startTime: string; kind: Placement['kind'] } | null;
+  draggingId?: string | null;
+  dragDisabled?: boolean;
 }) {
   const slots: number[] = [];
   for (let m = range.start; m < range.end; m += 10) slots.push(m);
@@ -106,22 +110,26 @@ export function SimGrid({
               const canStart = m + CLASS_MINUTES <= range.end;
               const p = placement && canStart ? placement(wd, t) : null;
               const dots = waitDots?.get(`${wd}|${t}`) ?? 0;
-              const cell = (
-                <button
+              return (
+                <Cell
                   key={m}
-                  type="button"
-                  aria-label={`${WEEKDAY_NAMES[wd]} ${shortTime(t)}${p ? (p.kind === 'ok' ? ' 놓을 수 있음' : p.kind === 'warn' ? ' 경고' : ' 불가') : ''}`}
-                  onClick={() => canStart && onCell(wd, t)}
-                  className={`absolute inset-x-0 ${m % 30 === 0 ? 'border-t border-stone-200' : ''} ${p ? PLACE_BG[p.kind] : 'active:bg-emerald-50'}`}
-                  style={{ top: px(m - range.start), height: px(10) }}
-                >
-                  {dots > 0 && (
-                    <span className="absolute top-0 right-0.5 rounded-full bg-sky-600 px-1 text-[10px] leading-tight font-bold text-white">대기 {dots}</span>
-                  )}
-                </button>
+                  weekday={wd}
+                  start={t}
+                  top={m - range.start}
+                  line={m % 30 === 0}
+                  place={p}
+                  dots={dots}
+                  onTap={() => canStart && onCell(wd, t)}
+                />
               );
-              return renderCell ? <div key={m}>{renderCell(wd, t, cell)}</div> : cell;
             })}
+
+            {preview && preview.weekday === wd && (
+              <div
+                className={`pointer-events-none absolute inset-x-0.5 z-30 rounded-md border-4 ${preview.kind === 'block' ? 'border-stone-500 bg-stone-400/30' : preview.kind === 'warn' ? 'border-amber-500 bg-amber-200/40' : 'border-emerald-600 bg-emerald-200/40'}`}
+                style={{ top: px(toMinutes(preview.startTime) - range.start), height: px(CLASS_MINUTES) }}
+              />
+            )}
 
             {ghosts
               .filter((g) => g.weekday === wd)
@@ -138,10 +146,19 @@ export function SimGrid({
             {blocks
               .filter((b) => b.cls.weekday === wd)
               .map((b) => {
-                const node = (
-                  <Block key={b.cls.id} b={b} range={range} selected={selectedId === b.cls.id} dim={selectedId !== null && selectedId !== b.cls.id} compact={compact} onTap={onBlock} />
+                return (
+                  <Block
+                    key={b.cls.id}
+                    b={b}
+                    range={range}
+                    selected={selectedId === b.cls.id}
+                    dim={selectedId !== null && selectedId !== b.cls.id}
+                    compact={compact}
+                    onTap={onBlock}
+                    dragging={draggingId === b.cls.id}
+                    disabled={Boolean(dragDisabled)}
+                  />
                 );
-                return renderBlock ? <div key={b.cls.id}>{renderBlock(b, node)}</div> : node;
               })}
           </div>
         ))}
@@ -157,6 +174,8 @@ function Block({
   dim,
   compact,
   onTap,
+  dragging,
+  disabled,
 }: {
   b: BlockView;
   range: { start: number; end: number };
@@ -164,8 +183,17 @@ function Block({
   dim: boolean;
   compact: boolean;
   onTap: (id: string, tappedStart: string) => void;
+  dragging: boolean;
+  disabled: boolean;
 }) {
   const start = toMinutes(b.cls.startTime);
+  const drag = useDraggable({ id: `block:${b.cls.id}`, disabled });
+  const drop = useDroppable({ id: `block:${b.cls.id}`, disabled: disabled || dragging });
+  const setRef = (el: HTMLElement | null) => {
+    drag.setNodeRef(el);
+    drop.setNodeRef(el);
+  };
+  const t = drag.transform;
   const over = b.count > 4;
   const onClick = (e: MouseEvent<HTMLButtonElement>) => {
     // 블록 안에서 누른 위치의 10분 칸(선택한 반을 10분만 옮길 때)
@@ -175,13 +203,20 @@ function Block({
   };
   return (
     <button
+      ref={setRef}
       type="button"
       onClick={onClick}
       data-sim-block={b.cls.id}
-      className={`absolute inset-x-0.5 z-10 flex flex-col overflow-hidden rounded-md border px-1 py-0.5 text-left leading-tight shadow-sm ${
+      {...drag.listeners}
+      {...drag.attributes}
+      className={`absolute inset-x-0.5 z-10 flex select-none [-webkit-touch-callout:none] flex-col overflow-hidden rounded-md border px-1 py-0.5 text-left leading-tight shadow-sm ${
         b.isNew ? 'border-emerald-500 bg-emerald-50' : 'border-sky-300 bg-sky-50'
-      } ${selected ? 'z-20 ring-4 ring-emerald-600' : ''} ${dim ? 'opacity-80' : ''}`}
-      style={{ top: `calc(${start - range.start} * var(--u))`, height: `calc(${CLASS_MINUTES} * var(--u))` }}
+      } ${selected ? 'z-20 ring-4 ring-emerald-600' : ''} ${dim ? 'opacity-80' : ''} ${dragging ? 'z-50 opacity-90 shadow-2xl' : ''} ${drop.isOver ? 'ring-4 ring-violet-500' : ''}`}
+      style={{
+        top: `calc(${start - range.start} * var(--u))`,
+        height: `calc(${CLASS_MINUTES} * var(--u))`,
+        transform: t ? `translate3d(${t.x}px, ${t.y}px, 0)` : undefined,
+      }}
     >
       <span className="flex items-center gap-1">
         <span className={`truncate font-bold ${compact ? 'text-xs' : 'text-sm'}`}>{b.grade}</span>
@@ -217,3 +252,35 @@ function Block({
 const Badge = ({ tone, children }: { tone: string; children: ReactNode }) => (
   <span className={`rounded px-1 text-[10px] leading-tight font-bold ${tone}`}>{children}</span>
 );
+
+function Cell({
+  weekday,
+  start,
+  top,
+  line,
+  place,
+  dots,
+  onTap,
+}: {
+  weekday: number;
+  start: string;
+  top: number;
+  line: boolean;
+  place: Placement | null;
+  dots: number;
+  onTap: () => void;
+}) {
+  const { setNodeRef } = useDroppable({ id: `cell:${weekday}|${start}` });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      aria-label={`${WEEKDAY_NAMES[weekday]} ${shortTime(start)}${place ? (place.kind === 'ok' ? ' 놓을 수 있음' : place.kind === 'warn' ? ' 경고' : ' 불가') : ''}`}
+      onClick={onTap}
+      className={`absolute inset-x-0 ${line ? 'border-t border-stone-200' : ''} ${place ? PLACE_BG[place.kind] : 'active:bg-emerald-50'}`}
+      style={{ top: px(top), height: px(10) }}
+    >
+      {dots > 0 && <span className="absolute top-0 right-0.5 rounded-full bg-sky-600 px-1 text-[10px] leading-tight font-bold text-white">대기 {dots}</span>}
+    </button>
+  );
+}

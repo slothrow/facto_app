@@ -1,6 +1,21 @@
 // 시안 화면(SPEC_simulator 3·4장). 탭 방식 옮기기: 반 탭 → 칸 색 표시 → 칸 탭으로 이동.
 // 폰 세로: 요일 탭으로 한 요일씩. 가로·PC: 전체 격자. 선택은 요일 탭을 바꿔도 유지된다.
-import { useMemo, useState, type ReactNode } from 'react';
+// 드래그(4.3): PC는 마우스로 5px 이상 끌면, 폰은 0.25초 길게 누르면 들린다(짧게 쓸면 스크롤).
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
 import { navigate } from '../../app/router.ts';
 import { useRoster } from '../../app/RosterContext.tsx';
@@ -27,6 +42,8 @@ import {
   type SimDraft,
 } from '../../engine/simulator/index.ts';
 import type { Weekday } from '../../engine/types.ts';
+import { CLASS_MINUTES, fromMinutes, toMinutes } from '../../engine/classTime.ts';
+import type { Placement } from '../../engine/simulator/index.ts';
 import type { SimClassRow } from '../../storage/rosterTypes.ts';
 import { WEEKDAY_NAMES } from '../roster/rosterModel.ts';
 import { SimClassSheet } from './SimClassSheet.tsx';
@@ -45,6 +62,13 @@ export function DraftEditor({ draftId }: { draftId: string }) {
   const [sheet, setSheet] = useState<{ preset?: { weekday: Weekday; startTime: string }; edit?: SimClassRow } | null>(null);
   const [merge, setMerge] = useState<{ from: string; into: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [drag, setDrag] = useState<{ id: string; offset: number } | null>(null);
+  const [preview, setPreview] = useState<{ weekday: number; startTime: string; kind: Placement['kind'] } | null>(null);
+  const justDragged = useRef(0);
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
+  );
 
   const hours = hoursOf(data);
   const curriculum = withCurriculumDefaults(data.settings.curriculum);
@@ -122,6 +146,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
   };
 
   const onBlock = (id: string, tappedStart: string) => {
+    if (Date.now() - justDragged.current < 400) return; // 끌기 끝의 클릭은 무시
     if (!editable) {
       select(selectedId === id ? null : id);
       return;
@@ -143,10 +168,95 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     select(null);
   };
 
+  // ---------- 드래그 ----------
+  // 블록 위 > 빼놓은 반 영역 > 10분 칸 순서로 놓을 곳을 고른다(손가락·마우스 위치 기준)
+  const collision: CollisionDetection = (args) => {
+    const hits = pointerWithin(args);
+    const pick =
+      hits.find((h) => String(h.id).startsWith('block:')) ?? hits.find((h) => h.id === 'removed') ?? hits.find((h) => String(h.id).startsWith('cell:'));
+    return pick ? [pick] : [];
+  };
+  type Target = { kind: 'cell'; weekday: Weekday; start: string } | { kind: 'block'; into: string } | { kind: 'removed' } | null;
+  const targetOf = (overId: string | undefined, dragId: string, offset: number): Target => {
+    if (!overId) return null;
+    if (overId === 'removed') return { kind: 'removed' };
+    if (overId.startsWith('block:')) {
+      const into = overId.slice(6);
+      return into === dragId ? null : { kind: 'block', into };
+    }
+    const [wd, t] = overId.slice(5).split('|');
+    // 잡은 위치만큼 빼서 블록 윗변 = 시작 시간. 10분 칸에 붙는다
+    let m = toMinutes(t) - offset;
+    m = Math.max(range.start, Math.min(range.end - CLASS_MINUTES, m));
+    return { kind: 'cell', weekday: Number(wd) as Weekday, start: fromMinutes(m) };
+  };
+  const onDragStart = (e: DragStartEvent) => {
+    const id = String(e.active.id).slice(6);
+    const el = document.querySelector(`[data-sim-block="${id}"]`);
+    const ev = e.activatorEvent as MouseEvent | TouchEvent;
+    const y = 'touches' in ev ? (ev.touches[0]?.clientY ?? 0) : ev.clientY;
+    // 빼놓은 반 목록에서 끌면 손가락이 블록 가운데쯤(20분)
+    let offset = 20;
+    const removedNow = d.classes.find((c) => c.id === id)?.removed;
+    if (el && !removedNow) {
+      const r = el.getBoundingClientRect();
+      offset = Math.max(0, Math.min(40, Math.floor((((y - r.top) / r.height) * CLASS_MINUTES) / 10) * 10));
+    }
+    if ('touches' in ev && navigator.vibrate) navigator.vibrate(30);
+    setDrag({ id, offset });
+    setSelectedId(id);
+  };
+  const onDragOver = (e: DragOverEvent) => {
+    if (!drag) return;
+    const t = targetOf(e.over ? String(e.over.id) : undefined, drag.id, drag.offset);
+    setPreview(t?.kind === 'cell' ? { weekday: t.weekday, startTime: t.start, kind: canPlace(d, drag.id, t.weekday, t.start, hours).kind } : null);
+  };
+  const endDrag = () => {
+    setDrag(null);
+    setPreview(null);
+    justDragged.current = Date.now();
+  };
+  const onDragEnd = (e: DragEndEvent) => {
+    const cur = drag;
+    endDrag();
+    if (!cur) return;
+    const t = targetOf(e.over ? String(e.over.id) : undefined, cur.id, cur.offset);
+    if (!t) {
+      select(null);
+      return;
+    }
+    if (t.kind === 'removed') {
+      apply(removeClass(d, cur.id));
+      showToast('빼놓았어요');
+      select(null);
+    } else if (t.kind === 'block') {
+      setMerge({ from: cur.id, into: t.into });
+    } else {
+      const c = d.classes.find((x) => x.id === cur.id);
+      if (c && c.weekday === t.weekday && c.startTime === t.start && !c.removed) return select(null);
+      const p = canPlace(d, cur.id, t.weekday, t.start, hours);
+      if (p.kind === 'block') {
+        showToast('놓을 수 없는 자리라 원래 자리로 돌아갔어요');
+        select(null);
+      } else tryMove(cur.id, t.weekday, t.start);
+    }
+  };
+
   const days: Weekday[] = phonePortrait ? [day] : SIM_WEEKDAYS;
   const removed = removedClasses(d);
 
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collision}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => {
+        endDrag();
+        select(null);
+      }}
+    >
     <div className="space-y-3 pb-24">
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => navigate('/roster/sim')} className="flex h-11 items-center gap-1 text-base text-stone-600">
@@ -231,6 +341,9 @@ export function DraftEditor({ draftId }: { draftId: string }) {
           compact={!phonePortrait}
           onCell={onCell}
           onBlock={onBlock}
+          preview={preview}
+          draggingId={drag?.id ?? null}
+          dragDisabled={!editable}
         />
         <RemovedArea
           classes={removed}
@@ -241,6 +354,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
           canDrop={Boolean(selected && !selected.removed && editable)}
           onDrop={doRemove}
           phone={phonePortrait}
+          dropEnabled={editable}
         />
       </div>
 
@@ -329,6 +443,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
         />
       )}
     </div>
+    </DndContext>
   );
 }
 
@@ -341,7 +456,7 @@ function RemovedArea({
   canDrop,
   onDrop,
   phone,
-  dropRef,
+  dropEnabled,
 }: {
   classes: SimClassRow[];
   titleOf: (c: SimClassRow) => string;
@@ -351,9 +466,10 @@ function RemovedArea({
   canDrop: boolean;
   onDrop: () => void;
   phone: boolean;
-  dropRef?: (el: HTMLElement | null) => void;
+  dropEnabled: boolean;
 }) {
   const [open, setOpen] = useState(true);
+  const { setNodeRef, isOver } = useDroppable({ id: 'removed', disabled: !dropEnabled });
   const body: ReactNode = (
     <div className="space-y-2">
       {canDrop && (
@@ -363,26 +479,38 @@ function RemovedArea({
       )}
       {classes.length === 0 && !canDrop && <p className="text-sm text-stone-500">빼놓은 반이 없어요. 반을 선택하고 [빼놓기]를 누르세요.</p>}
       {classes.map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          onClick={() => onPick(c.id)}
-          className={`flex min-h-11 w-full items-center justify-between rounded-xl border px-3 text-left text-sm ${selectedId === c.id ? 'border-emerald-600 ring-2 ring-emerald-600' : 'border-stone-300 bg-stone-50'}`}
-        >
-          <span className="font-semibold">{titleOf(c)}</span>
-          <span className="text-stone-500">{countOf(c.id)}명</span>
-        </button>
+        <RemovedItem key={c.id} id={c.id} title={titleOf(c)} count={countOf(c.id)} selected={selectedId === c.id} onPick={onPick} disabled={!dropEnabled} />
       ))}
     </div>
   );
   return (
-    <section ref={dropRef} className="mt-3 rounded-2xl border border-stone-200 bg-white p-3 md:sticky md:top-4 md:mt-0">
+    <section ref={setNodeRef} className={`mt-3 rounded-2xl border bg-white p-3 md:sticky md:top-4 md:mt-0 ${isOver ? 'border-violet-500 ring-4 ring-violet-300' : 'border-stone-200'}`}>
       <button type="button" className="flex h-9 w-full items-center justify-between text-base font-bold" onClick={() => phone && setOpen(!open)}>
         빼놓은 반 ({classes.length})
         {phone && <span className="text-sm font-normal text-stone-500">{open ? '접기' : '펼치기'}</span>}
       </button>
       {(open || !phone) && <div className="mt-2">{body}</div>}
     </section>
+  );
+}
+
+/** 빼놓은 반 하나: 탭하면 선택, 끌어서 격자에 놓으면 복귀 */
+function RemovedItem({ id, title, count, selected, onPick, disabled }: { id: string; title: string; count: number; selected: boolean; onPick: (id: string) => void; disabled: boolean }) {
+  const { setNodeRef, listeners, attributes, transform, isDragging } = useDraggable({ id: `block:${id}`, disabled });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      data-sim-block={id}
+      onClick={() => onPick(id)}
+      {...listeners}
+      {...attributes}
+      style={{ transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined }}
+      className={`relative flex min-h-11 w-full items-center justify-between rounded-xl border px-3 text-left text-sm select-none ${selected ? 'border-emerald-600 ring-2 ring-emerald-600' : 'border-stone-300 bg-stone-50'} ${isDragging ? 'z-50 shadow-2xl' : ''}`}
+    >
+      <span className="font-semibold">{title}</span>
+      <span className="text-stone-500">{count}명</span>
+    </button>
   );
 }
 
