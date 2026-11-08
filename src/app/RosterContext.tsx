@@ -11,6 +11,8 @@ interface RosterValue {
   /** 바뀐 행만 저장. 성공하면 true */
   mutate: (change: RosterChange, message?: string) => Promise<boolean>;
   replaceRoster: (next: RosterData) => Promise<void>;
+  /** 시안 적용(한 번에 전부). 성공하면 true */
+  applyDraft: (draftId: string, change: RosterChange) => Promise<boolean>;
 }
 
 const Ctx = createContext<RosterValue | null>(null);
@@ -65,9 +67,28 @@ export function RosterProvider({ repo, children }: { repo: RosterRepository; chi
     [repo],
   );
 
+  const applyDraft = useCallback(
+    async (draftId: string, change: RosterChange) => {
+      try {
+        await repo.applyDraft(draftId, change);
+      } catch (e) {
+        showToast(`적용하지 못했어요(아무것도 바뀌지 않았어요): ${e instanceof Error ? e.message : String(e)}`);
+        return false;
+      }
+      // 서버에서 다시 읽어 화면을 맞춘다(적용 시각 등 서버 값 포함)
+      try {
+        set(await repo.load());
+      } catch {
+        if (ref.current) set(applyChange(ref.current, change));
+      }
+      return true;
+    },
+    [repo, showToast],
+  );
+
   if (loadError) return <p className="p-6 text-red-700">학생 데이터를 불러오지 못했어요: {loadError}</p>;
   if (!roster) return <p className="p-6 text-stone-500">불러오는 중…</p>;
-  return <Ctx.Provider value={{ roster, mutate, replaceRoster }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ roster, mutate, replaceRoster, applyDraft }}>{children}</Ctx.Provider>;
 }
 
 export function useRoster(): RosterValue {

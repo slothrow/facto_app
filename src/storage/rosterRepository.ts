@@ -17,6 +17,18 @@ export interface RosterRepository {
   apply(change: RosterChange): Promise<void>;
   /** 전체 교체(백업 복원) */
   replaceAll(data: RosterData): Promise<void>;
+  /** 시안 적용: 전부 성공하거나 전부 취소(SPEC_simulator 7.3). 이미 적용된 시안이면 실패 */
+  applyDraft(draftId: string, change: RosterChange): Promise<void>;
+}
+
+/** 시안 적용 함수(apply_sim_draft)에 넘길 모양: { upsert: { 표 이름: 행[] }, remove: { enrollments: [{ id }] } } */
+export function applyDraftPayload(change: RosterChange): { upsert: Record<string, Row[]>; remove: { enrollments: { id: string }[] } } {
+  const upsert: Record<string, Row[]> = {};
+  for (const k of ROSTER_KEYS) {
+    const rows = change.upsert?.[k] as object[] | undefined;
+    if (rows?.length) upsert[ROSTER_TABLE[k]] = rows.map((r) => rowToDb(k, r));
+  }
+  return { upsert, remove: { enrollments: (change.remove?.enrollments ?? []).map((e) => ({ id: e.id })) } };
 }
 
 // ---------------------------------------------------------------
@@ -156,6 +168,11 @@ export class SupabaseRosterRepository implements RosterRepository {
     const { error } = await this.db.rpc('replace_roster', { p_data: rosterToDb(data) });
     if (error) throw new Error(error.message);
   }
+
+  async applyDraft(draftId: string, change: RosterChange): Promise<void> {
+    const { error } = await this.db.rpc('apply_sim_draft', { p_draft_id: draftId, p_change: applyDraftPayload(change) });
+    if (error) throw new Error(error.message);
+  }
 }
 
 // ---------------------------------------------------------------
@@ -184,6 +201,14 @@ export class LocalRosterRepository implements RosterRepository {
 
   async replaceAll(data: RosterData): Promise<void> {
     this.write(data);
+  }
+
+  async applyDraft(draftId: string, change: RosterChange): Promise<void> {
+    const data = await this.load();
+    const draft = data.simDrafts.find((d) => d.id === draftId);
+    if (!draft) throw new Error('draft not found');
+    if (draft.status !== 'editing') throw new Error(`draft is not editable (status: ${draft.status})`);
+    this.write(applyChange(data, change));
   }
 
   private write(data: RosterData) {

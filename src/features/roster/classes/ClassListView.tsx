@@ -17,6 +17,8 @@ import {
   classGradeLabel,
   classHeadcount,
   compareClasses,
+  timetableChangeDates,
+  timetableClasses,
 } from '../rosterModel.ts';
 import { ClassForm } from './ClassForm.tsx';
 import { useAppData } from '../../../app/AppDataContext.tsx';
@@ -31,6 +33,10 @@ export function ClassListView({ mode }: { mode?: string }) {
   const [adding, setAdding] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
   const timetable = mode !== 'list';
+  const [asOf, setAsOf] = useState<string | undefined>(undefined);
+  const changeDates = useMemo(() => timetableChangeDates(roster.classes, today), [roster.classes, today]);
+  const view = asOf && changeDates.includes(asOf) ? asOf : undefined;
+  const shown = useMemo(() => timetableClasses(roster.classes, today, view), [roster.classes, today, view]);
 
   const active = useMemo(() => roster.classes.filter((c) => isClassActive(c, today)).sort(compareClasses), [roster.classes, today]);
   const closed = roster.classes.filter((c) => !isClassActive(c, today)).sort(compareClasses);
@@ -72,7 +78,25 @@ export function ClassListView({ mode }: { mode?: string }) {
         </Card>
       )}
 
-      {timetable ? <TimetableGrid classes={active} /> : <ClassList classes={active} roster={roster} today={today} />}
+      {changeDates.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1" role="tablist" aria-label="어느 날짜 시간표">
+          <span className="mr-1 text-sm text-stone-500">시간표 바뀜:</span>
+          {[undefined, ...changeDates].map((dt) => (
+            <button
+              key={dt ?? 'now'}
+              type="button"
+              role="tab"
+              aria-selected={view === dt}
+              onClick={() => setAsOf(dt)}
+              className={`h-9 rounded-full border px-3 text-sm font-semibold ${view === dt ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-stone-300 bg-white text-stone-700'}`}
+            >
+              {dt ? `${Number(dt.slice(5, 7))}/${Number(dt.slice(8, 10))}부터` : '지금'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {timetable ? <TimetableGrid classes={shown} asOf={view} /> : <ClassList classes={view ? shown : active} roster={roster} today={view ?? today} />}
       {!timetable && (
         <Button className="w-full" onClick={() => navigate('/roster/progress-import')}>
           진도 일괄 입력

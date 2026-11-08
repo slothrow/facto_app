@@ -1,5 +1,5 @@
 // 반·학생 화면에서 쓰는 계산(순수 함수). 화면 코드와 분리해서 테스트한다.
-import { CLASS_MINUTES, checkClassTime, fromMinutes, isClassActive, shortTime, toMinutes } from '../../engine/classTime.ts';
+import { CLASS_MINUTES, checkClassTime, fromMinutes, isClassActive, isClassOpenOn, shortTime, toMinutes } from '../../engine/classTime.ts';
 import { classGradeCodeOn, gradeCodeOn, gradeLabel } from '../../engine/grade.ts';
 import type { ClassRow, EnrollmentRow, RosterData, StudentRow } from '../../storage/rosterTypes.ts';
 
@@ -40,6 +40,29 @@ export function freeStandardSlots(dayClasses: Pick<ClassRow, 'startTime'>[]): st
       return a + CLASS_MINUTES <= b || b + CLASS_MINUTES <= a;
     }),
   );
+}
+
+/** 앞으로 시간표가 바뀌는 날짜(개설·폐반 예정일). 반 편성 적용 후 "그날부터" 시간표 보기용 */
+export function timetableChangeDates(classes: Pick<ClassRow, 'openedOn' | 'closedOn'>[], today: string, max = 4): string[] {
+  const set = new Set<string>();
+  for (const c of classes) {
+    if (c.openedOn && c.openedOn > today) set.add(c.openedOn);
+    if (c.closedOn && c.closedOn > today) set.add(c.closedOn);
+  }
+  return [...set].sort().slice(0, max);
+}
+
+/**
+ * 시간표에 보일 반.
+ * - 날짜를 고르면(asOf): 그날 운영 중인 반
+ * - 지금: 오늘 운영 중인 반 + 개설 예정인 반(단, 지금 반과 시간이 겹치는 예정 반 = 옮겨 갈 반은 그날 보기에서만)
+ */
+export function timetableClasses(classes: ClassRow[], today: string, asOf?: string): ClassRow[] {
+  if (asOf) return classes.filter((c) => isClassOpenOn(c, asOf)).sort(compareClasses);
+  const open = classes.filter((c) => isClassOpenOn(c, today));
+  const future = classes.filter((c) => c.openedOn && c.openedOn > today && isClassActive(c, today));
+  const fits = future.filter((f) => checkClassTime(f, open, today).conflicts.length === 0);
+  return [...open, ...fits].sort(compareClasses);
 }
 
 export const compareClasses = (a: ClassRow, b: ClassRow) =>

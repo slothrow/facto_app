@@ -1,6 +1,6 @@
 // 반·학생 탭. 상단 전환: [시간표] [학생] [대기자] [편성]
 // 주소: #/roster/classes, #/roster/students, #/roster/waitlist, #/roster/class/<id>, #/roster/student/<id>,
-// #/roster/sim(시안 목록), #/roster/sim/<시안 id>, #/roster/sim-compare
+// #/roster/sim(시안 목록), #/roster/sim/<시안 id>, #/roster/sim/<시안 id>/apply, #/roster/sim-compare
 // (주소에는 id만 넣는다. 이름은 넣지 않는다)
 import type { ReactNode } from 'react';
 import { navigate } from '../../app/router.ts';
@@ -13,6 +13,7 @@ import { ProgressImportView } from '../curriculum/ProgressImportView.tsx';
 import { DraftEditor } from '../simulator/DraftEditor.tsx';
 import { DraftListView } from '../simulator/DraftListView.tsx';
 import { CompareView } from '../simulator/CompareView.tsx';
+import { ApplyView } from '../simulator/ApplyView.tsx';
 
 const SECTIONS = [
   { id: 'classes', label: '시간표' },
@@ -29,6 +30,9 @@ export function RosterPage({ params }: { params: string[] }) {
   if (view === 'sim-compare') {
     section = 'sim';
     body = <CompareView />;
+  } else if (view === 'sim' && id && rest[0] === 'apply') {
+    section = 'sim';
+    body = <ApplyView key={id} draftId={id} />;
   } else if (view === 'sim' && id) {
     section = 'sim';
     body = <DraftEditor key={id} draftId={id} />;

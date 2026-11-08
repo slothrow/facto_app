@@ -303,6 +303,15 @@ export function DraftEditor({ draftId }: { draftId: string }) {
       {!editable && (
         <p className="rounded-xl bg-stone-100 px-3 py-2 text-sm text-stone-700">
           {d.draft.status === 'applied' ? '적용된 시안이에요. 읽기 전용입니다.' : '보관한 시안이에요. 목록에서 보관을 풀면 고칠 수 있어요.'}
+          {d.draft.status === 'applied' && d.draft.appliedSummary && (
+            <>
+              <br />
+              <b>
+                적용 결과({d.draft.appliedAt ? new Date(d.draft.appliedAt).toLocaleString('ko-KR') : ''}, {d.draft.appliedSummary.option}):
+              </b>{' '}
+              {d.draft.appliedSummary.lines.join(' · ')}
+            </>
+          )}
         </p>
       )}
 
@@ -328,6 +337,9 @@ export function DraftEditor({ draftId }: { draftId: string }) {
             </Button>
             <Button variant="ghost" className="px-3 text-sm" onClick={() => setConfirmReset(true)}>
               처음으로
+            </Button>
+            <Button variant="primary" className="ml-auto px-4" onClick={() => navigate(`/roster/sim/${d.draft.id}/apply`)}>
+              적용하기
             </Button>
           </>
         )}

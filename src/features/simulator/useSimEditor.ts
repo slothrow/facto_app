@@ -1,4 +1,4 @@
-// 시안 편집 상태: 모든 조작은 즉시 자동 저장, 이번 접속 중 되돌리기/다시 실행(최대 50개). SPEC_simulator 2.3
+// 시안 편집 상태(편집 중인 시안만 저장, 적용됨·보관은 읽기 전용): 모든 조작은 즉시 자동 저장, 이번 접속 중 되돌리기/다시 실행(최대 50개). SPEC_simulator 2.3
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRoster } from '../../app/RosterContext.tsx';
 import type { SimDraft } from '../../engine/simulator/index.ts';
@@ -23,7 +23,7 @@ export function useSimEditor(draftId: string) {
   const apply = useCallback(
     (next: SimDraft) => {
       const cur = ref.current;
-      if (!cur) return;
+      if (!cur || cur.draft.status !== 'editing') return;
       setPast((p) => [...p, cur].slice(-MAX_HISTORY));
       setFuture([]);
       void save(cur, next);
@@ -35,7 +35,7 @@ export function useSimEditor(draftId: string) {
   const quiet = useCallback(
     (next: SimDraft) => {
       const cur = ref.current;
-      if (cur) void save(cur, next);
+      if (cur && cur.draft.status === 'editing') void save(cur, next);
     },
     [save],
   );
@@ -43,7 +43,7 @@ export function useSimEditor(draftId: string) {
   const undo = useCallback(() => {
     const cur = ref.current;
     const prev = past[past.length - 1];
-    if (!cur || !prev) return;
+    if (!cur || !prev || cur.draft.status !== 'editing') return;
     setPast((p) => p.slice(0, -1));
     setFuture((f) => [cur, ...f]);
     void save(cur, { ...prev, draft: { ...prev.draft, gradeView: cur.draft.gradeView, name: cur.draft.name } });
@@ -52,7 +52,7 @@ export function useSimEditor(draftId: string) {
   const redo = useCallback(() => {
     const cur = ref.current;
     const next = future[0];
-    if (!cur || !next) return;
+    if (!cur || !next || cur.draft.status !== 'editing') return;
     setFuture((f) => f.slice(1));
     setPast((p) => [...p, cur].slice(-MAX_HISTORY));
     void save(cur, { ...next, draft: { ...next.draft, gradeView: cur.draft.gradeView, name: cur.draft.name } });

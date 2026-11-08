@@ -37,10 +37,10 @@ type Range = { start: number; end: number };
 /** 분 → CSS 길이. --u = 1분의 높이(50분 칸에 이름 4~5명이 들어가는 크기) */
 const px = (minutes: number) => `calc(${minutes} * var(--u))`;
 
-export function TimetableGrid({ classes }: { classes: ClassRow[] }) {
+export function TimetableGrid({ classes, asOf }: { classes: ClassRow[]; /** 이 날짜 기준 명단(반 편성 적용 후 "그날부터" 보기). 없으면 오늘 */ asOf?: string }) {
   const { roster } = useRoster();
-  const today = todayStr();
-  const todayWd = weekdayOf(today);
+  const today = asOf ?? todayStr();
+  const todayWd = asOf ? -1 : weekdayOf(today);
   const range = timetableRange(classes);
   const [picked, setPicked] = useState<StudentRow | null>(null);
   const [newAt, setNewAt] = useState<{ weekday: Weekday; startTime: string } | null>(null);

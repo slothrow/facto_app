@@ -54,7 +54,16 @@ export function DraftListView() {
           <PlusIcon className="inline h-4 w-4" /> 새 시안
         </Button>
       </div>
-      <p className="text-sm text-stone-500">시안에서 반을 옮기고·만들고·빼고·합쳐 봐도 실제 반·학생은 바뀌지 않아요. [적용하기]를 눌렀을 때만 반영돼요.</p>
+      <details className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm" open={roster.simDrafts.length === 0}>
+        <summary className="min-h-8 cursor-pointer font-bold text-emerald-900">편성 사용 안내</summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-stone-700">
+          <li>[새 시안] → 지금 시간표가 복사돼요. 여기서 무엇을 해도 실제 반은 그대로예요.</li>
+          <li>반을 톡 누르고 초록 칸을 누르면 이동(길게 눌러 끌어도 돼요). 다른 반을 누르면 합치기.</li>
+          <li>[상세](또는 길게 눌렀다 떼기) → 아이 태그·대기자·임시 이름·메모.</li>
+          <li>아래 [경고]·[변경]으로 확인하고, 잘못하면 [↶ 되돌리기].</li>
+          <li>다 되면 [적용하기] → 백업 → 수업월 고르기 → 미리보기 확인 후 적용.</li>
+        </ol>
+      </details>
 
       {visible.length === 0 && (
         <Card>
