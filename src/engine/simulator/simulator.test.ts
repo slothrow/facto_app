@@ -262,7 +262,9 @@ describe('planApply (7장)', () => {
     expect(up.classes!.find((c) => c.id === 'third')!.closedOn).toBe('2027-03-02');
     expect(up.classes!.find((c) => c.id === 'b')).toBeUndefined();
     // a반 학생 2명 → b반
-    expect(up.enrollments!.filter((e) => e.classId === 'b' && e.startDate === '2027-03-02').map((e) => e.studentId).sort()).toEqual(['a-s0', 'a-s1', expect.any(String)].sort());
+    const toB = up.enrollments!.filter((e) => e.classId === 'b' && e.startDate === '2027-03-02').map((e) => e.studentId);
+    expect(toB).toHaveLength(3); // a반 2명 + 신규 대기자 1명
+    expect(toB).toEqual(expect.arrayContaining(['a-s0', 'a-s1']));
     // 퇴원 예정
     expect(up.students!.find((s) => s.id === 'b-s0')).toMatchObject({ status: 'left', statusFrom: '2027-03-02' });
     // 신규 대기자 → 학생 등록 + 배정 + 대기자 "등록"
