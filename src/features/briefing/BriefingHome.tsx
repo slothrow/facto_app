@@ -57,11 +57,10 @@ export function BriefingHome({ dateParam, classParam }: { dateParam?: string; cl
         <Button variant="ghost" className="px-2" aria-label="다음 날" onClick={() => go(addDays(date, 1))}>
           <ChevronRight className="h-6 w-6" />
         </Button>
-        {date !== today && (
-          <Button className="shrink-0 px-3" onClick={() => go(today)}>
-            오늘
-          </Button>
-        )}
+        {/* 날짜칸 크기가 바뀌지 않게 [오늘]은 항상 두고, 오늘이면 눌리지 않게만 */}
+        <Button className="shrink-0 px-3" disabled={date === today} onClick={() => go(today)}>
+          오늘
+        </Button>
       </div>
 
       {noClassReason || classes.length === 0 ? (

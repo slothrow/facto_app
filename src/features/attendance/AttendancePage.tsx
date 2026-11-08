@@ -36,11 +36,15 @@ function DayClassList({ date }: { date: string }) {
         </Button>
         <div className="text-center">
           <h1 className="text-xl font-bold">{dateTitle(date)} 출석</h1>
-          {date !== today && (
-            <button type="button" className="min-h-9 text-sm text-emerald-800 underline" onClick={() => navigate(`/attend/${today}`)}>
-              오늘로
-            </button>
-          )}
+          {/* 자리를 항상 차지해서 날짜를 넘겨도 아래 내용이 움직이지 않게 */}
+          <button
+            type="button"
+            className={`min-h-9 text-sm text-emerald-800 underline ${date === today ? 'invisible' : ''}`}
+            tabIndex={date === today ? -1 : 0}
+            onClick={() => navigate(`/attend/${today}`)}
+          >
+            오늘로
+          </button>
         </div>
         <Button variant="ghost" className="px-2" aria-label="다음 날" onClick={() => navigate(`/attend/${addDays(date, 1)}`)}>
           <ChevronRight className="h-6 w-6" />
