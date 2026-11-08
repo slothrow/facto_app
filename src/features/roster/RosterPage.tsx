@@ -12,6 +12,7 @@ import { WaitlistView } from './waitlist/WaitlistView.tsx';
 import { ProgressImportView } from '../curriculum/ProgressImportView.tsx';
 import { DraftEditor } from '../simulator/DraftEditor.tsx';
 import { DraftListView } from '../simulator/DraftListView.tsx';
+import { CompareView } from '../simulator/CompareView.tsx';
 
 const SECTIONS = [
   { id: 'classes', label: '시간표' },
@@ -25,7 +26,10 @@ export function RosterPage({ params }: { params: string[] }) {
 
   let section: (typeof SECTIONS)[number]['id'] = 'classes';
   let body: ReactNode;
-  if (view === 'sim' && id) {
+  if (view === 'sim-compare') {
+    section = 'sim';
+    body = <CompareView />;
+  } else if (view === 'sim' && id) {
     section = 'sim';
     body = <DraftEditor key={id} draftId={id} />;
   } else if (view === 'sim') {

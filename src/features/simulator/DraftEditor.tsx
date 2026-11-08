@@ -27,6 +27,7 @@ import {
   SIM_WEEKDAYS,
   canPlace,
   checkDraft,
+  diffDraft,
   headcount,
   isGraduating,
   liveClasses,
@@ -46,7 +47,10 @@ import { CLASS_MINUTES, fromMinutes, toMinutes } from '../../engine/classTime.ts
 import type { Placement } from '../../engine/simulator/index.ts';
 import type { SimClassRow } from '../../storage/rosterTypes.ts';
 import { WEEKDAY_NAMES } from '../roster/rosterModel.ts';
+import { ReviewPanel } from './ReviewPanel.tsx';
+import { SimClassDetail } from './SimClassDetail.tsx';
 import { SimClassSheet } from './SimClassSheet.tsx';
+import { TAG_TONE, blockPeople, memberViews, waitDots, waitlistMatches } from './simReview.ts';
 import { SimGrid, type BlockView, type GhostView } from './SimGrid.tsx';
 import { gridRange, hoursOf, lookupFor, simProgress } from './simModel.ts';
 import { addClass, deleteNewClass, mergeClass, moveClass, removeClass, updateClass } from './simOps.ts';
@@ -62,9 +66,11 @@ export function DraftEditor({ draftId }: { draftId: string }) {
   const [sheet, setSheet] = useState<{ preset?: { weekday: Weekday; startTime: string }; edit?: SimClassRow } | null>(null);
   const [merge, setMerge] = useState<{ from: string; into: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
-  const [drag, setDrag] = useState<{ id: string; offset: number } | null>(null);
+  const [drag, setDrag] = useState<{ id: string; offset: number; touch: boolean } | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ weekday: number; startTime: string; kind: Placement['kind'] } | null>(null);
   const justDragged = useRef(0);
+  const selectedAt = useRef(0);
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 6 } }),
@@ -117,7 +123,8 @@ export function DraftEditor({ draftId }: { draftId: string }) {
       graduating: d.draft.gradeView === 'next' && isGraduating(c, d.draft),
       warn: warnIds.has(c.id),
       memo: Boolean(c.memo),
-      waitCount: 0,
+      waitCount: waitlistMatches(d, c, roster).length,
+      people: phonePortrait ? undefined : blockPeople(d, c.id, roster),
     };
   });
   const ghosts: GhostView[] = liveClasses(d).flatMap((c) => {
@@ -126,7 +133,10 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     return [{ weekday: s.weekday, startTime: s.startTime, text: `→ ${slotText(c.weekday, c.startTime)}` }];
   });
 
-  const select = (id: string | null) => setSelectedId(id);
+  const select = (id: string | null) => {
+    selectedAt.current = Date.now();
+    setSelectedId(id);
+  };
 
   const tryMove = (id: string, weekday: Weekday, start: string) => {
     const p = canPlace(d, id, weekday, start, hours);
@@ -153,6 +163,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     }
     if (!selectedId) return select(id);
     if (selectedId === id) {
+      if (Date.now() - selectedAt.current < 500) return; // 더블클릭의 두 번째 클릭
       const c = d.classes.find((x) => x.id === id)!;
       if (tappedStart === c.startTime) select(null);
       else tryMove(id, c.weekday, tappedStart);
@@ -203,7 +214,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
       offset = Math.max(0, Math.min(40, Math.floor((((y - r.top) / r.height) * CLASS_MINUTES) / 10) * 10));
     }
     if ('touches' in ev && navigator.vibrate) navigator.vibrate(30);
-    setDrag({ id, offset });
+    setDrag({ id, offset, touch: 'touches' in ev });
     setSelectedId(id);
   };
   const onDragOver = (e: DragOverEvent) => {
@@ -220,6 +231,11 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     const cur = drag;
     endDrag();
     if (!cur) return;
+    // 폰: 길게 누르고 움직이지 않고 떼면 반 상세(5장)
+    if (cur.touch && Math.hypot(e.delta.x, e.delta.y) < 8) {
+      setDetailId(cur.id);
+      return;
+    }
     const t = targetOf(e.over ? String(e.over.id) : undefined, cur.id, cur.offset);
     if (!t) {
       select(null);
@@ -243,6 +259,15 @@ export function DraftEditor({ draftId }: { draftId: string }) {
   };
 
   const days: Weekday[] = phonePortrait ? [day] : SIM_WEEKDAYS;
+  const changes = diffDraft(d.draft.baseSnapshot, d, d.draft.baseDate);
+  const pickFromReview = (id: string) => {
+    const c = d.classes.find((x) => x.id === id);
+    const target = c?.mergedInto ? d.classes.find((x) => x.id === c.mergedInto) : c;
+    if (!target) return;
+    select(target.id);
+    if (phonePortrait) setDay(target.weekday);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const removed = removedClasses(d);
 
   return (
@@ -344,7 +369,10 @@ export function DraftEditor({ draftId }: { draftId: string }) {
           preview={preview}
           draggingId={drag?.id ?? null}
           dragDisabled={!editable}
+          onBlockDouble={(id) => setDetailId(id)}
+          waitDots={selected && editable && !selected.removed ? waitDots(d, selected, roster, days, range) : undefined}
         />
+        <div className="space-y-3">
         <RemovedArea
           classes={removed}
           titleOf={titleOf}
@@ -356,6 +384,8 @@ export function DraftEditor({ draftId }: { draftId: string }) {
           phone={phonePortrait}
           dropEnabled={editable}
         />
+        <ReviewPanel warnings={warnings} changes={changes} summary={summary} onPick={pickFromReview} />
+        </div>
       </div>
 
       {selected && (
@@ -363,14 +393,22 @@ export function DraftEditor({ draftId }: { draftId: string }) {
           <div className="flex w-full max-w-[480px] flex-wrap items-center gap-2 rounded-2xl bg-stone-900/95 px-3 py-2 text-white shadow-xl md:max-w-2xl">
             <span className="min-w-0 flex-1 text-sm">
               <b>{titleOf(selected)}</b>
+              {phonePortrait && (
+                <span className="ml-1 text-xs">
+                  {memberViews(d, selected.id, roster).map((v, i) => (
+                    <span key={v.m.id} className={`${TAG_TONE[v.m.tag]} !text-inherit`}>
+                      {i > 0 ? ', ' : ''}
+                      {v.name}
+                    </span>
+                  ))}
+                </span>
+              )}
               <br />
               {editable ? (selected.removed ? '넣을 위치를 누르세요' : '옮길 위치를 누르세요 · 다른 반을 누르면 합치기') : '읽기 전용'}
             </span>
-            {editable && (
-              <Button className="px-3" onClick={() => setSheet({ edit: selected })}>
-                반 정보
-              </Button>
-            )}
+            <Button className="px-3" onClick={() => setDetailId(selected.id)}>
+              상세
+            </Button>
             {editable && !selected.removed && (
               <Button className="px-3" onClick={doRemove}>
                 빼놓기
@@ -393,6 +431,20 @@ export function DraftEditor({ draftId }: { draftId: string }) {
             </Button>
           </div>
         </div>
+      )}
+
+      {detailId && d.classes.some((c) => c.id === detailId) && (
+        <SimClassDetail
+          d={d}
+          cls={d.classes.find((c) => c.id === detailId)!}
+          roster={roster}
+          progress={progressOf(detailId)}
+          curriculum={curriculum}
+          editable={editable}
+          onApply={apply}
+          onEditInfo={() => setSheet({ edit: d.classes.find((c) => c.id === detailId)! })}
+          onClose={() => setDetailId(null)}
+        />
       )}
 
       {sheet && (

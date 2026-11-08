@@ -83,3 +83,26 @@ describe('시안 조작 (17단계 완료 기준)', () => {
     expect(gridRange(d, withHoursDefaults())).toEqual({ start: 13 * 60, end: 19 * 60 });
   });
 });
+
+describe('대기자 연결 (5.2)', async () => {
+  const { waitlistMatches, waitDots } = await import('./simReview.ts');
+  it('학년·희망 시간이 맞는 대기자, 시안에 넣으면 목록에서 빠진다', () => {
+    const { roster, d } = setup();
+    const seven = d.classes.find((c) => c.sourceClassId === 'seven')!;
+    const w = {
+      id: 'w1', name: '대기', gradeCode: 6, gradeBasisYear: 2026, birthday: null, guardian: null, wish: { 2: '14:00' },
+      inquiredOn: BASE, source: null, stage: 'inquiry' as const, stageHistory: [], memo: null, studentId: null,
+    };
+    const r = { ...roster, waitlist: [w] };
+    expect(waitlistMatches(d, seven, r).map((x) => x.id)).toEqual(['w1']);
+    // 다음 학년도 보기에서는 학년이 맞지 않는다(대기자도 같이 진급하므로 그대로 맞음)
+    expect(waitlistMatches({ ...d, draft: { ...d.draft, gradeView: 'next' } }, seven, r)).toHaveLength(1);
+    // 화 13:30은 희망(14:00 이후) 밖
+    expect(waitlistMatches(d, { ...seven, startTime: '13:30' }, r)).toHaveLength(0);
+    const dots = waitDots(d, seven, r, [1, 2], { start: 13 * 60, end: 19 * 60 });
+    expect(dots.get('2|14:00')).toBe(1);
+    expect(dots.has('2|13:30')).toBe(false);
+    expect(dots.has('1|14:00')).toBe(false);
+    expect(waitlistMatches(addMember(d, seven.id, { waitlistId: 'w1' }), seven, r)).toHaveLength(0);
+  });
+});

@@ -52,6 +52,7 @@ export function SimGrid({
   preview,
   draggingId,
   dragDisabled,
+  onBlockDouble,
 }: {
   days: Weekday[];
   range: { start: number; end: number };
@@ -69,6 +70,8 @@ export function SimGrid({
   preview?: { weekday: number; startTime: string; kind: Placement['kind'] } | null;
   draggingId?: string | null;
   dragDisabled?: boolean;
+  /** PC 더블클릭 → 반 상세 */
+  onBlockDouble?: (id: string) => void;
 }) {
   const slots: number[] = [];
   for (let m = range.start; m < range.end; m += 10) slots.push(m);
@@ -155,6 +158,7 @@ export function SimGrid({
                     dim={selectedId !== null && selectedId !== b.cls.id}
                     compact={compact}
                     onTap={onBlock}
+                    onDouble={onBlockDouble}
                     dragging={draggingId === b.cls.id}
                     disabled={Boolean(dragDisabled)}
                   />
@@ -176,6 +180,7 @@ function Block({
   onTap,
   dragging,
   disabled,
+  onDouble,
 }: {
   b: BlockView;
   range: { start: number; end: number };
@@ -185,6 +190,7 @@ function Block({
   onTap: (id: string, tappedStart: string) => void;
   dragging: boolean;
   disabled: boolean;
+  onDouble?: (id: string) => void;
 }) {
   const start = toMinutes(b.cls.startTime);
   const drag = useDraggable({ id: `block:${b.cls.id}`, disabled });
@@ -206,6 +212,7 @@ function Block({
       ref={setRef}
       type="button"
       onClick={onClick}
+      onDoubleClick={() => onDouble?.(b.cls.id)}
       data-sim-block={b.cls.id}
       {...drag.listeners}
       {...drag.attributes}
