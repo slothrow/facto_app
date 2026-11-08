@@ -37,6 +37,9 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   basicLessons: 'basic_lesson_plans',
   briefingTexts: 'briefing_texts',
   briefings: 'briefings',
+  simDrafts: 'sim_drafts',
+  simClasses: 'sim_classes',
+  simMembers: 'sim_members',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -54,6 +57,9 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   basicLessons: ['id'],
   briefingTexts: ['code'],
   briefings: ['id'],
+  simDrafts: ['id'],
+  simClasses: ['id'],
+  simMembers: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);

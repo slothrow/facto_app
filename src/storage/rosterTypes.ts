@@ -192,6 +192,74 @@ export interface BriefingRow {
   sharedBy?: string | null;
 }
 
+// ---------------------------------------------------------------
+// 4단계: 반 편성 시뮬레이터 (SPEC_simulator.md 8장)
+// 시안에서 무엇을 해도 실제 반·학생은 바뀌지 않는다. [적용하기]에서만 반영.
+// ---------------------------------------------------------------
+
+export type SimDraftStatus = 'editing' | 'applied' | 'archived';
+export type SimGradeView = 'current' | 'next';
+export type SimTag = 'keep' | 'move' | 'leaving' | 'new' | 'undecided';
+
+/** 시안을 만들 때의 실제 반·배정 상태(변경 목록·"시안 만든 뒤 바뀐 내용" 비교용) */
+export interface SimSnapshot {
+  classes: Pick<ClassRow, 'id' | 'weekday' | 'startTime' | 'gradeCode' | 'gradeBasisYear' | 'alias'>[];
+  /** 반별 학생 */
+  members: { classId: string; studentId: string }[];
+}
+
+export interface SimAppliedSummary {
+  option: string;
+  lines: string[];
+}
+
+export interface SimDraftRow {
+  id: string;
+  name: string;
+  baseDate: string;
+  sourceDraftId: string | null;
+  status: SimDraftStatus;
+  gradeView: SimGradeView;
+  memo: string | null;
+  /** 마지막으로 고친 시각(ISO). 반·아이를 고쳐도 앱이 함께 바꾼다 */
+  editedAt: string;
+  appliedAt: string | null;
+  appliedSummary: SimAppliedSummary | null;
+  baseSnapshot: SimSnapshot;
+}
+
+export interface SimClassRow {
+  id: string;
+  draftId: string;
+  /** 원래 실제 반. 시안에서 새로 만든 반이면 null */
+  sourceClassId: string | null;
+  weekday: Weekday;
+  startTime: string;
+  gradeCode: GradeCode | null;
+  gradeBasisYear: number | null;
+  alias: string | null;
+  memo: string | null;
+  /** 빼놓은 반(시간표에서 빠짐, 삭제 아님) */
+  removed: boolean;
+  /** 합쳐진 대상 시안 반 */
+  mergedInto: string | null;
+  /** 새 반 시작 진도 */
+  startStage: StageId | null;
+  startUnit: number | null;
+}
+
+export interface SimMemberRow {
+  id: string;
+  draftId: string;
+  simClassId: string;
+  studentId: string | null;
+  waitlistId: string | null;
+  /** 아직 대기자 등록 전인 상담 아이. 적용할 때 반영하지 않는다 */
+  tempName: string | null;
+  tag: SimTag;
+  memo: string | null;
+}
+
 export interface RosterData {
   classes: ClassRow[];
   students: StudentRow[];
@@ -206,6 +274,9 @@ export interface RosterData {
   basicLessons: BasicLessonRow[];
   briefingTexts: BriefingTextRow[];
   briefings: BriefingRow[];
+  simDrafts: SimDraftRow[];
+  simClasses: SimClassRow[];
+  simMembers: SimMemberRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -225,6 +296,9 @@ export const ROSTER_KEYS: RosterKey[] = [
   'basicLessons',
   'briefingTexts',
   'briefings',
+  'simDrafts',
+  'simClasses',
+  'simMembers',
 ];
 
 export const emptyRoster = (): RosterData => ({
@@ -241,6 +315,9 @@ export const emptyRoster = (): RosterData => ({
   basicLessons: [],
   briefingTexts: [],
   briefings: [],
+  simDrafts: [],
+  simClasses: [],
+  simMembers: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];

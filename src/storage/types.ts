@@ -13,6 +13,8 @@ export interface AppSettings {
   offsetWarningThreshold: number;
   /** 교육과정(단계 접두어·기본 학년). 3단계에 생긴 항목이라 없으면 기본값(withCurriculumDefaults) */
   curriculum?: Partial<Record<StageId, Partial<StageSetting>>>;
+  /** 운영 시간대(요일별 첫 수업 시작~마지막 수업 끝). 4단계에 생긴 항목이라 없으면 13:30~18:30 */
+  operatingHours?: Partial<Record<Weekday, { start: string; end: string }>>;
 }
 
 /** track_anchors */
