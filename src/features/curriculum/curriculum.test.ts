@@ -41,6 +41,17 @@ describe('진도 일괄 입력(3.5)', () => {
     expect(rows[0]).toMatchObject({ cls: { id: 'mon' }, courseMonth: '2026-11', stage: 'basic', unit: null, error: null });
   });
 
+  it('주차: 단원 칸 "3-2" 또는 주차 열, 틀린 주차는 오류', () => {
+    const text = ['요일,시작시간,수업월,단계,단원,주차', '화,16:30,2026-12,B,3-2,', '금,15:40,2026-12,B,1,3', '월,17:30,2026-12,B,1,5'].join('\n');
+    const rows = buildProgressImport(text, roster(), DEFAULT_CURRICULUM, TODAY);
+    expect(rows.map((r) => [r.unit, r.unitWeek, r.error === null])).toEqual([
+      [3, 2, true],
+      [1, 3, true],
+      [1, 1, false],
+    ]);
+    expect(progressImportChange(rows).upsert?.progressAnchors?.map((x) => x.unitWeek)).toEqual([2, 3]);
+  });
+
   it('못 찾는 반·폐반·잘못된 값은 오류 줄로 표시하고 저장하지 않음', () => {
     const text = ['요일,시작시간,수업월,단계,단원', '목,16:30,2026-12,P,1', '수,15:30,2026-12,P,1', '화,16:30,2026-13,P,1', '화,16:30,2026-12,Z,1', '화,16:30,2026-12,P,13'].join('\n');
     const rows = buildProgressImport(text, roster(), DEFAULT_CURRICULUM, TODAY);
@@ -54,7 +65,7 @@ describe('진도 일괄 입력(3.5)', () => {
     const rows = buildProgressImport('화,16:30,2026-12,P,8', r, DEFAULT_CURRICULUM, TODAY);
     expect(rows[0].existing?.id).toBe('a1');
     expect(progressImportChange(rows).upsert?.progressAnchors).toEqual([
-      { id: 'a1', classId: 'tue', courseMonth: '2026-12', stage: 'P', unit: 8, memo: '메모' },
+      { id: 'a1', classId: 'tue', courseMonth: '2026-12', stage: 'P', unit: 8, unitWeek: 1, memo: '메모' },
     ]);
   });
 

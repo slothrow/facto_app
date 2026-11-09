@@ -29,6 +29,7 @@
 ### 3.1 진도 기준점
 - 반마다 "어느 수업월에 어느 단계 몇 단원을 했는지"를 기준점으로 저장: `class_progress_anchors(class_id, course_month, stage, unit)`
 - 학년도나 달력과는 무관하다. 반에서 정한 기준점부터 수업월마다 단원이 1씩 올라간다.
+- 기준점에는 주차(`unit_week`, 1~4, 기본 1)도 있다. "그 수업월 1회차가 몇 주차 수업인지"이다. 예: 2027-01 수업월 = B1-3 → 1~4회 B1-3, B1-4, B2-1, B2-2, 다음 수업월 1회 B2-3 (2026-11-10 결정).
 - 기준점은 여러 개 둘 수 있다. 어떤 수업월 M의 진도는 M 이전(또는 같은) 기준점 중 가장 최근 것에서 계산한다. 실제와 다르게 흘러가면 그 수업월에 기준점을 하나 더 추가해서 고친다.
 
 ### 3.2 계산 규칙 (순수 함수, src/engine/curriculum.ts)
@@ -37,10 +38,10 @@ codeFor(class, date):
   1) 회차 엔진으로 그 반 요일의 date 회차를 구한다 → (courseMonth, weekNo). 회차가 없으면(공휴일·휴원·비움) 코드 없음.
   2) courseMonth 이하인 가장 최근 기준점 A를 찾는다. 없으면 "진도 미설정".
   2-1) A가 베이직이면 "베이직"(그 날짜의 베이직 수업 계획을 쓴다). 코드 없음.
-  3) n = A.unit - 1 + 수업월 차이(courseMonth - A.course_month)
-     stageIndex = index(A.stage) + floor(n / 12), unit = (n % 12) + 1
-     stageIndex가 S를 넘으면 "과정 완료".
-  4) code = prefix(stage) + unit + "-" + weekNo
+  3) n = (A.unit - 1) * 4 + (A.unit_week - 1) + 수업월 차이(courseMonth - A.course_month) * 4 + (weekNo - 1)   // 단계 처음부터 몇 번째 수업
+     stageIndex = index(A.stage) + floor(n / 48), unit = floor((n % 48) / 4) + 1, week = n % 4 + 1
+     stageIndex가 S를 넘으면 "과정 완료". (unit_week = 1이면 예전 규칙과 같다: week = weekNo)
+  4) code = prefix(stage) + unit + "-" + week
 ```
 - **반드시 달력월이 아니라 수업월 기준**으로 계산한다(앞섬·밀림이 있는 요일 때문).
 

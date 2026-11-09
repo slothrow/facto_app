@@ -87,8 +87,8 @@ export function ApplyView({ draftId }: { draftId: string }) {
 
   return (
     <div className="space-y-3 pb-8">
-      <button type="button" onClick={back} className="flex h-11 items-center gap-1 text-base text-stone-600">
-        <ChevronLeft className="h-5 w-5" /> 시안으로
+      <button type="button" onClick={back} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-stone-300 bg-white pr-4 pl-2 text-lg font-semibold text-stone-800 shadow-sm active:bg-stone-100">
+        <ChevronLeft className="h-7 w-7" /> 시안으로
       </button>
       <h1 className="text-lg font-bold">적용하기 · {d.draft.name}</h1>
 

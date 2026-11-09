@@ -41,25 +41,49 @@ export interface ProgressAnchor {
   stage: StageId;
   /** 베이직이면 null */
   unit: number | null;
+  /**
+   * 그 수업월 1회차의 주차(1~4). 예: 단원 1·주차 3 = 1회차 B1-3 → 2회차 B1-4 → 3회차 B2-1.
+   * 없으면 1(수업월과 단원이 딱 맞음)
+   */
+  unitWeek?: number | null;
 }
 
 export type Progress =
   | { kind: 'unset' }
   | { kind: 'done' }
   | { kind: 'basic' }
-  | { kind: 'unit'; stage: StageId; unit: number };
+  | { kind: 'unit'; stage: StageId; unit: number; /** 물어본 회차의 수업 주차 */ week: WeekNo };
 
-/** 수업월 M의 진도: M 이하인 가장 최근 기준점에서 수업월마다 단원 +1 (3.2) */
-export function progressAt(anchors: ProgressAnchor[], courseMonth: string): Progress {
+const WEEKS_PER_UNIT = 4;
+
+/**
+ * 수업월 M·주차 W 회차의 진도: M 이하인 가장 최근 기준점에서 회차마다 한 주씩 나아간다(3.2).
+ * 기준점 주차가 1이면 수업월마다 단원 +1, 주차가 W이면 W만큼 앞선 자리에서 센다.
+ * 주차를 안 주면 그 수업월 1회차 기준.
+ */
+export function progressAt(anchors: ProgressAnchor[], courseMonth: string, weekNo: WeekNo = 1): Progress {
   const anchor = anchors
     .filter((a) => a.courseMonth <= courseMonth)
     .sort((a, b) => b.courseMonth.localeCompare(a.courseMonth))[0];
   if (!anchor) return { kind: 'unset' };
   if (anchor.stage === 'basic' || anchor.unit === null) return { kind: 'basic' };
-  const n = anchor.unit - 1 + (monthIndex(courseMonth) - monthIndex(anchor.courseMonth));
-  const stageIndex = UNIT_STAGES.indexOf(anchor.stage) + Math.floor(n / UNITS_PER_STAGE);
+  const startWeek = Math.min(Math.max(anchor.unitWeek ?? 1, 1), WEEKS_PER_UNIT);
+  // 단계 처음(1단원 1주)부터 몇 번째 수업인지
+  const n =
+    (anchor.unit - 1) * WEEKS_PER_UNIT +
+    (startWeek - 1) +
+    (monthIndex(courseMonth) - monthIndex(anchor.courseMonth)) * WEEKS_PER_UNIT +
+    (weekNo - 1);
+  const perStage = UNITS_PER_STAGE * WEEKS_PER_UNIT;
+  const stageIndex = UNIT_STAGES.indexOf(anchor.stage) + Math.floor(n / perStage);
   if (stageIndex >= UNIT_STAGES.length) return { kind: 'done' };
-  return { kind: 'unit', stage: UNIT_STAGES[stageIndex], unit: (n % UNITS_PER_STAGE) + 1 };
+  const inStage = n % perStage;
+  return {
+    kind: 'unit',
+    stage: UNIT_STAGES[stageIndex],
+    unit: Math.floor(inStage / WEEKS_PER_UNIT) + 1,
+    week: ((inStage % WEEKS_PER_UNIT) + 1) as WeekNo,
+  };
 }
 
 export type CodeResult =
@@ -74,12 +98,21 @@ export type CodeResult =
 export const formatUnitCode = (stage: StageId, unit: number, weekNo: WeekNo, settings: CurriculumSettings = DEFAULT_CURRICULUM) =>
   `${settings[stage].prefix}${unit}-${weekNo}`;
 
-/** 단계·단원 짧은 표시(예: "P9", "베이직") */
+/** 단계·단원 짧은 표시(예: "P9", "베이직"). 수업월 1회차가 단원 중간이면 "B1-3"처럼 주차까지 */
 export function formatProgress(p: Progress, settings: CurriculumSettings = DEFAULT_CURRICULUM): string {
   if (p.kind === 'unset') return '진도 미설정';
   if (p.kind === 'done') return '과정 완료';
   if (p.kind === 'basic') return STAGE_NAMES.basic;
-  return `${settings[p.stage].prefix}${p.unit}`;
+  return `${settings[p.stage].prefix}${p.unit}${p.week !== 1 ? `-${p.week}` : ''}`;
+}
+
+/** 기준점 표시(예: "B1-3", "베이직") */
+export function formatAnchor(
+  a: Pick<ProgressAnchor, 'stage' | 'unit' | 'unitWeek'>,
+  settings: CurriculumSettings = DEFAULT_CURRICULUM,
+): string {
+  if (a.stage === 'basic' || a.unit === null) return STAGE_NAMES.basic;
+  return `${settings[a.stage].prefix}${a.unit}-${a.unitWeek ?? 1}`;
 }
 
 /** 그 날짜 회차(엔진 결과)와 기준점으로 수업 코드를 구한다 */
@@ -90,9 +123,9 @@ export function codeFor(
 ): CodeResult {
   if (!session) return { kind: 'noSession' };
   const label = { courseMonth: session.courseMonth, weekNo: session.weekNo };
-  const p = progressAt(anchors, session.courseMonth);
+  const p = progressAt(anchors, session.courseMonth, session.weekNo);
   if (p.kind === 'unit') {
-    return { kind: 'code', code: formatUnitCode(p.stage, p.unit, session.weekNo, settings), stage: p.stage, unit: p.unit, ...label };
+    return { kind: 'code', code: formatUnitCode(p.stage, p.unit, p.week, settings), stage: p.stage, unit: p.unit, ...label };
   }
   return { kind: p.kind, ...label };
 }

@@ -161,6 +161,8 @@ export interface ProgressAnchorRow {
   courseMonth: string;
   stage: StageId;
   unit: number | null;
+  /** 그 수업월 1회차의 주차(1~4). B1-3이면 unit 1, unitWeek 3. 예전 데이터에는 없을 수 있다(=1) */
+  unitWeek?: number;
   memo: string | null;
 }
 

@@ -34,15 +34,15 @@ export function ProgressImportView() {
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={() => navigate('/roster/classes/list')} className="flex h-11 items-center gap-1 text-base text-stone-600">
-        <ChevronLeft className="h-5 w-5" /> 반 목록
+      <button type="button" onClick={() => navigate('/roster/classes/list')} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-stone-300 bg-white pr-4 pl-2 text-lg font-semibold text-stone-800 shadow-sm active:bg-stone-100">
+        <ChevronLeft className="h-7 w-7" /> 반 목록
       </button>
       <h1 className="text-xl font-bold">진도 일괄 입력</h1>
 
       <Card>
         <ol className="list-decimal space-y-1 pl-5 text-base text-stone-700">
           <li>[양식 내려받기]로 반 목록 파일을 받아요.</li>
-          <li>엑셀에서 단계(베이직·K·P·A·B·S)와 단원(1~12)을 채워요. 수업월은 그 진도를 한 수업월이에요.</li>
+          <li>엑셀에서 단계(베이직·K·P·A·B·S)와 단원(1~12)을 채워요. 단원 중간에서 시작하면 "3-2"처럼 주차까지 써요. 수업월은 그 진도를 한 수업월이에요.</li>
           <li>표 전체를 복사해서 아래에 붙여넣고 [저장]을 눌러요.</li>
         </ol>
         <Button className="mt-3 w-full" onClick={downloadTemplate}>
@@ -73,8 +73,8 @@ export function ProgressImportView() {
                       {WEEKDAY_NAMES[r.cls!.weekday]} {r.cls!.startTime}
                     </b>{' '}
                     <span className="text-stone-600">{classGradeLabel(r.cls!, today)}</span> · {courseMonthFull(r.courseMonth!)} ={' '}
-                    <b className="text-emerald-800">{stageText(r.stage!, r.unit, settings)}</b>
-                    {r.existing && <span className="ml-1 text-sm text-amber-700">(있던 기준점 {stageText(r.existing.stage, r.existing.unit, settings)} 바꿈)</span>}
+                    <b className="text-emerald-800">{stageText(r.stage!, r.unit, settings, r.unitWeek)}</b>
+                    {r.existing && <span className="ml-1 text-sm text-amber-700">(있던 기준점 {stageText(r.existing.stage, r.existing.unit, settings, r.existing.unitWeek ?? 1)} 바꿈)</span>}
                     {r.note && <span className="ml-1 text-sm text-sky-700">({r.note})</span>}
                   </>
                 )}

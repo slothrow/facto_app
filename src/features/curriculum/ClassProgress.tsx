@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
 import { todayStr, useRoster } from '../../app/RosterContext.tsx';
 import { BottomSheet, Button, Card, ConfirmDialog, Field, inputClass } from '../../components/ui.tsx';
-import { STAGES, STAGE_NAMES, UNITS_PER_STAGE, formatProgress, type StageId } from '../../engine/curriculum.ts';
+import { STAGES, STAGE_NAMES, UNITS_PER_STAGE, codeFor, formatAnchor, formatProgress, type StageId } from '../../engine/curriculum.ts';
 import { addMonthsYm, monthsBetween } from '../../engine/dates.ts';
 import { newId, type ClassRow, type ProgressAnchorRow } from '../../storage/rosterTypes.ts';
 import { anchorsOf, classProgressNow, courseMonthFull, courseMonthLabel, curriculumOf, currentSessionByWeekday, suggestedStage } from './curriculumModel.ts';
@@ -16,6 +16,7 @@ export function ClassProgress({ cls }: { cls: ClassRow }) {
   const current = useMemo(() => currentSessionByWeekday(data, today), [data, today]);
   const now = classProgressNow(roster, cls, current);
   const anchors = anchorsOf(roster, cls.id);
+  const nowCode = codeFor(anchors, now.session, settings);
   const [editing, setEditing] = useState<ProgressAnchorRow | 'new' | null>(null);
 
   return (
@@ -26,6 +27,11 @@ export function ClassProgress({ cls }: { cls: ClassRow }) {
         </span>
         {now.session && <span className="text-base text-stone-600">· {courseMonthLabel(now.session.courseMonth)}</span>}
       </div>
+      {nowCode.kind === 'code' && (
+        <p className="mt-1 text-base text-stone-700">
+          이번 회차 <b className="text-emerald-800">{nowCode.code}</b>
+        </p>
+      )}
       {now.progress.kind === 'unset' && <p className="mt-1 text-sm text-stone-600">기준점을 넣으면 수업월마다 단원이 자동으로 올라가요.</p>}
       {now.progress.kind === 'basic' && <p className="mt-1 text-sm text-stone-600">베이직은 문구 관리 → 베이직 탭에서 날짜별 수업 내용을 미리 적어요.</p>}
 
@@ -38,7 +44,7 @@ export function ClassProgress({ cls }: { cls: ClassRow }) {
             <li key={a.id}>
               <button type="button" onClick={() => setEditing(a)} className="flex min-h-11 w-full items-center gap-2 text-left active:bg-stone-50">
                 <span className="text-base text-stone-600">{courseMonthFull(a.courseMonth)}</span>
-                <span className="text-base font-semibold">= {a.stage === 'basic' ? STAGE_NAMES.basic : `${settings[a.stage].prefix}${a.unit}`}</span>
+                <span className="text-base font-semibold">= {formatAnchor(a, settings)}</span>
                 {a.memo && <span className="truncate text-sm text-stone-500">{a.memo}</span>}
               </button>
             </li>
@@ -78,6 +84,7 @@ function AnchorForm({
   const [month, setMonth] = useState(initial?.courseMonth ?? defaultMonth);
   const [stage, setStage] = useState<StageId>(initial?.stage ?? suggestedStage(cls, defaultMonth, settings) ?? 'P');
   const [unit, setUnit] = useState(initial?.unit ?? 1);
+  const [unitWeek, setUnitWeek] = useState(initial?.unitWeek ?? 1);
   const [memo, setMemo] = useState(initial?.memo ?? '');
   const [deleting, setDeleting] = useState(false);
 
@@ -93,6 +100,7 @@ function AnchorForm({
       courseMonth: month,
       stage,
       unit: stage === 'basic' ? null : unit,
+      unitWeek: stage === 'basic' ? 1 : unitWeek,
       memo: memo.trim() || null,
     };
     const remove = initial && sameMonth ? { progressAnchors: [initial] } : undefined;
@@ -136,6 +144,33 @@ function AnchorForm({
                 </option>
               ))}
             </select>
+          </Field>
+        )}
+        {stage !== 'basic' && (
+          <Field label="주차" hint="그 수업월 1회차가 몇 주차 수업인지 골라요">
+            <div className="grid grid-cols-4 gap-1">
+              {[1, 2, 3, 4].map((w) => (
+                <button
+                  key={w}
+                  type="button"
+                  aria-pressed={unitWeek === w}
+                  onClick={() => setUnitWeek(w)}
+                  className={`h-11 rounded-xl border text-base font-semibold ${unitWeek === w ? 'border-emerald-700 bg-emerald-700 text-white' : 'border-stone-300 bg-white'}`}
+                >
+                  {settings[stage].prefix}
+                  {unit}-{w}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 rounded-xl bg-emerald-50 p-3 text-base text-emerald-900">
+              {Number(month.slice(5, 7))}월 수업월:{' '}
+              {([1, 2, 3, 4] as const)
+                .map((w) => {
+                  const r = codeFor([{ courseMonth: month, stage, unit, unitWeek }], { courseMonth: month, weekNo: w }, settings);
+                  return `${w}회 ${r.kind === 'code' ? r.code : '과정 완료'}`;
+                })
+                .join(' · ')}
+            </p>
           </Field>
         )}
         {expected && expected !== stage && (

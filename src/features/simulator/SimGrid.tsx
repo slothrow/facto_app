@@ -20,7 +20,7 @@ export interface BlockView {
   warn: boolean;
   memo: boolean;
   waitCount: number;
-  /** PC에서 블록 안에 보여 줄 아이(이름 + 태그 색) */
+  /** 블록 안에 보여 줄 아이(이름 + 태그 색) */
   people?: { name: string; tone: string }[];
 }
 
@@ -236,15 +236,8 @@ function Block({
         {b.cls.alias && `${b.cls.alias} `}
         {b.progress}
       </span>
-      <span className="flex flex-wrap gap-0.5">
-        {b.isNew && <Badge tone="bg-emerald-600 text-white">신규</Badge>}
-        {b.graduating && <Badge tone="bg-violet-600 text-white">졸업 대상</Badge>}
-        {b.warn && <Badge tone="bg-amber-400 text-amber-950">!</Badge>}
-        {b.memo && <Badge tone="bg-stone-200 text-stone-700">메모</Badge>}
-        {b.waitCount > 0 && <Badge tone="bg-sky-600 text-white">대기 {b.waitCount}</Badge>}
-      </span>
-      {b.people && !compact && (
-        <span className="mt-0.5 flex flex-wrap gap-x-1 text-xs">
+      {b.people && b.people.length > 0 && (
+        <span className={`flex flex-wrap gap-x-1 font-semibold leading-tight ${compact ? 'text-[10px]' : 'text-sm'}`}>
           {b.people.map((p, i) => (
             <span key={i} className={p.tone}>
               {p.name}
@@ -252,6 +245,13 @@ function Block({
           ))}
         </span>
       )}
+      <span className="flex flex-wrap gap-0.5">
+        {b.isNew && <Badge tone="bg-emerald-600 text-white">신규</Badge>}
+        {b.graduating && <Badge tone="bg-violet-600 text-white">졸업 대상</Badge>}
+        {b.warn && <Badge tone="bg-amber-400 text-amber-950">!</Badge>}
+        {b.memo && <Badge tone="bg-stone-200 text-stone-700">메모</Badge>}
+        {b.waitCount > 0 && <Badge tone="bg-sky-600 text-white">대기 {b.waitCount}</Badge>}
+      </span>
     </button>
   );
 }

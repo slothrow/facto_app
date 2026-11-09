@@ -90,7 +90,7 @@ export function simProgress(
   const stage = c.startStage ?? stageForGrade(classGradeCodeOn(c, monthStart(cm)), withCurriculumDefaults(data.settings.curriculum));
   if (!stage) return { kind: 'unset' };
   if (stage === 'basic') return { kind: 'basic' };
-  return { kind: 'unit', stage, unit: c.startUnit ?? 1 };
+  return { kind: 'unit', stage, unit: c.startUnit ?? 1, week: 1 };
 }
 
 /** 격자 세로 범위(분): 운영 시간대 ±30분, 그 밖의 반이 있으면 넓힌다. 10분 단위 */

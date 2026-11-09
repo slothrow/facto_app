@@ -1,20 +1,21 @@
 // 반 진도 일괄 입력(SPEC_briefing 3.5). 순수 함수.
-// 열: 요일, 시작시간, 수업월, 단계, 단원 (그 밖의 열은 무시). 요일+시작시간으로 운영 중인 반을 찾는다.
+// 열: 요일, 시작시간, 수업월, 단계, 단원, 주차(선택) (그 밖의 열은 무시). 단원 칸에 "3-2"처럼 주차까지 써도 된다. 요일+시작시간으로 운영 중인 반을 찾는다.
 import { isClassOpenOn, toMinutes } from '../../engine/classTime.ts';
 import { STAGE_NAMES, UNITS_PER_STAGE, stageFromText, type CurriculumSettings, type StageId } from '../../engine/curriculum.ts';
 import { newId, type ClassRow, type ProgressAnchorRow, type RosterChange, type RosterData } from '../../storage/rosterTypes.ts';
 import { WEEKDAY_NAMES, classGradeLabel, compareClasses } from '../roster/rosterModel.ts';
 import { parseTable, parseTime, parseWeekday } from '../roster/students/importModel.ts';
 
-type Col = 'weekday' | 'startTime' | 'courseMonth' | 'stage' | 'unit';
+type Col = 'weekday' | 'startTime' | 'courseMonth' | 'stage' | 'unit' | 'unitWeek';
 const HEADERS: Record<Col, string[]> = {
   weekday: ['요일'],
   startTime: ['시작시간', '시간', '시작'],
   courseMonth: ['수업월'],
   stage: ['단계'],
   unit: ['단원'],
+  unitWeek: ['주차'],
 };
-const ORDER: Col[] = ['weekday', 'startTime', 'courseMonth', 'stage', 'unit'];
+const ORDER: Col[] = ['weekday', 'startTime', 'courseMonth', 'stage', 'unit', 'unitWeek'];
 const norm = (s: string) => s.replace(/﻿/g, '').replace(/\s/g, '');
 
 export interface ProgressImportRow {
@@ -25,6 +26,8 @@ export interface ProgressImportRow {
   courseMonth: string | null;
   stage: StageId | null;
   unit: number | null;
+  /** 그 수업월 1회차의 주차(1~4) */
+  unitWeek: number;
   /** 저장 안 하는 이유 */
   error: string | null;
   /** 참고 안내(예: 15:30 → 15:40반으로 맞춤) */
@@ -63,7 +66,7 @@ export function buildProgressImport(
   // 머리글이 있으면 이름으로 열을 찾고, 없으면 요일·시작시간·수업월·단계·단원 순서로 본다
   const header = table[0].map(norm);
   const hasHeader = header.some((h) => Object.values(HEADERS).some((names) => names.includes(h)));
-  const index: Record<Col, number> = { weekday: 0, startTime: 1, courseMonth: 2, stage: 3, unit: 4 };
+  const index: Record<Col, number> = { weekday: 0, startTime: 1, courseMonth: 2, stage: 3, unit: 4, unitWeek: 5 };
   if (hasHeader) for (const c of ORDER) index[c] = header.findIndex((h) => HEADERS[c].includes(h));
   const body = hasHeader ? table.slice(1) : table;
 
@@ -80,6 +83,7 @@ export function buildProgressImport(
       courseMonth: null,
       stage: null,
       unit: null,
+      unitWeek: 1,
       error: null,
       note: null,
       existing: null,
@@ -99,9 +103,17 @@ export function buildProgressImport(
     row.stage = stageFromText(get('stage'), settings);
     if (!row.stage) return fail('단계를 읽을 수 없어요(베이직, K, P, A, B, S)');
     if (row.stage !== 'basic') {
-      const u = Number(get('unit'));
-      if (!Number.isInteger(u) || u < 1 || u > UNITS_PER_STAGE) return fail('단원은 1~12');
+      // "3" 또는 "3-2"(3단원 2주차)
+      const m = /^(\d{1,2})(?:\s*-\s*(\d))?$/.exec(get('unit'));
+      const u = m ? Number(m[1]) : NaN;
+      if (!Number.isInteger(u) || u < 1 || u > UNITS_PER_STAGE) return fail('단원은 1~12 (주차까지면 예: 3-2)');
       row.unit = u;
+      const wText = m?.[2] ?? get('unitWeek');
+      if (wText) {
+        const w = Number(wText);
+        if (!Number.isInteger(w) || w < 1 || w > 4) return fail('주차는 1~4');
+        row.unitWeek = w;
+      }
     }
     const key = `${row.cls.id}|${row.courseMonth}`;
     if (seen.has(key)) return fail('같은 반·수업월이 위에 이미 있어요');
@@ -121,13 +133,14 @@ export function progressImportChange(rows: ProgressImportRow[]): RosterChange {
       courseMonth: r.courseMonth!,
       stage: r.stage!,
       unit: r.stage === 'basic' ? null : r.unit,
+      unitWeek: r.stage === 'basic' ? 1 : r.unitWeek,
       memo: r.existing?.memo ?? null,
     }));
   return { upsert: { progressAnchors: anchors } };
 }
 
-export const stageText = (stage: StageId, unit: number | null, settings: CurriculumSettings) =>
-  stage === 'basic' ? STAGE_NAMES.basic : `${settings[stage].prefix}${unit ?? ''}`;
+export const stageText = (stage: StageId, unit: number | null, settings: CurriculumSettings, unitWeek = 1) =>
+  stage === 'basic' ? STAGE_NAMES.basic : `${settings[stage].prefix}${unit ?? ''}-${unitWeek}`;
 
 /** [양식 내려받기]: 운영 중인 반 목록이 채워진 CSV. 단계·단원은 빈칸(엑셀에서 한글이 안 깨지게 BOM) */
 export function progressTemplateCsv(classes: ClassRow[], today: string, courseMonthOf: (cls: ClassRow) => string): string {

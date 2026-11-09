@@ -4,6 +4,8 @@ import { seedInput } from '../data/seed.ts';
 import {
   DEFAULT_CURRICULUM,
   codeFor,
+  formatAnchor,
+  formatProgress,
   normalizeUnitCode,
   parseUnitCode,
   progressAt,
@@ -58,9 +60,9 @@ describe('3.3 단계 넘어가기·과정 완료', () => {
 describe('3.3 기준점 2개: 2026-12 = P8, 2027-03 = P5', () => {
   const two = [...P8, { courseMonth: '2027-03', stage: 'P', unit: 5 }] as ProgressAnchor[];
   it('2027-02 수업월 P10, 2027-03 수업월 P5, 2027-04 수업월 P6', () => {
-    expect(progressAt(two, '2027-02')).toEqual({ kind: 'unit', stage: 'P', unit: 10 });
-    expect(progressAt(two, '2027-03')).toEqual({ kind: 'unit', stage: 'P', unit: 5 });
-    expect(progressAt(two, '2027-04')).toEqual({ kind: 'unit', stage: 'P', unit: 6 });
+    expect(progressAt(two, '2027-02')).toEqual({ kind: 'unit', stage: 'P', unit: 10, week: 1 });
+    expect(progressAt(two, '2027-03')).toEqual({ kind: 'unit', stage: 'P', unit: 5, week: 1 });
+    expect(progressAt(two, '2027-04')).toEqual({ kind: 'unit', stage: 'P', unit: 6, week: 1 });
   });
 });
 
@@ -68,6 +70,39 @@ describe('3.3 회차 없는 날', () => {
   it('공휴일(2027-02-09 화) → 코드 없음', () => {
     expect(out.days.find((d) => d.date === '2027-02-09')?.status).toBe('holiday');
     expect(codeOn(P8, '2027-02-09')).toBe('noSession');
+  });
+});
+
+describe('기준점 주차(B1-3처럼 단원 중간에서 시작)', () => {
+  const B13 = [{ courseMonth: '2027-01', stage: 'B', unit: 1, unitWeek: 3 }] as ProgressAnchor[];
+  it('1월 수업월 1~4회 = B1-3, B1-4, B2-1, B2-2', () => {
+    expect([1, 2, 3, 4].map((w) => codeFor(B13, label('2027-01', w as 1 | 2 | 3 | 4)))).toMatchObject([
+      { code: 'B1-3', unit: 1 },
+      { code: 'B1-4', unit: 1 },
+      { code: 'B2-1', unit: 2 },
+      { code: 'B2-2', unit: 2 },
+    ]);
+  });
+  it('다음 수업월 1회 = B2-3, 표시는 "B2-3"', () => {
+    expect(codeFor(B13, label('2027-02', 1))).toMatchObject({ code: 'B2-3' });
+    expect(formatProgress(progressAt(B13, '2027-02'))).toBe('B2-3');
+  });
+  it('주차 1은 예전과 같다(표시 "B1")', () => {
+    const b = [{ courseMonth: '2027-01', stage: 'B', unit: 1, unitWeek: 1 }] as ProgressAnchor[];
+    expect(codeFor(b, label('2027-02', 3))).toMatchObject({ code: 'B2-3' });
+    expect(formatProgress(progressAt(b, '2027-01'))).toBe('B1');
+  });
+  it('단계 끝 넘어가기: B12-4 다음 회차 = S1-1, S12-4 다음 = 과정 완료', () => {
+    const a = [{ courseMonth: '2027-01', stage: 'B', unit: 12, unitWeek: 4 }] as ProgressAnchor[];
+    expect(codeFor(a, label('2027-01', 2))).toMatchObject({ code: 'S1-1', stage: 'S', unit: 1 });
+    const s = [{ courseMonth: '2027-01', stage: 'S', unit: 12, unitWeek: 3 }] as ProgressAnchor[];
+    expect(codeFor(s, label('2027-01', 2))).toMatchObject({ code: 'S12-4' });
+    expect(codeFor(s, label('2027-01', 3)).kind).toBe('done');
+  });
+  it('기준점 표시', () => {
+    expect(formatAnchor(B13[0])).toBe('B1-3');
+    expect(formatAnchor({ stage: 'P', unit: 8 })).toBe('P8-1');
+    expect(formatAnchor({ stage: 'basic', unit: null })).toBe('베이직');
   });
 });
 

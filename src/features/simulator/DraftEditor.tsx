@@ -124,7 +124,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
       warn: warnIds.has(c.id),
       memo: Boolean(c.memo),
       waitCount: waitlistMatches(d, c, roster).length,
-      people: phonePortrait ? undefined : blockPeople(d, c.id, roster),
+      people: blockPeople(d, c.id, roster),
     };
   });
   const ghosts: GhostView[] = liveClasses(d).flatMap((c) => {
@@ -284,8 +284,8 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     >
     <div className="space-y-3 pb-24">
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={() => navigate('/roster/sim')} className="flex h-11 items-center gap-1 text-base text-stone-600">
-          <ChevronLeft className="h-5 w-5" /> 시안 목록
+        <button type="button" onClick={() => navigate('/roster/sim')} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-stone-300 bg-white pr-4 pl-2 text-lg font-semibold text-stone-800 shadow-sm active:bg-stone-100">
+          <ChevronLeft className="h-7 w-7" /> 시안 목록
         </button>
         <h1 className="min-w-0 flex-1 truncate text-lg font-bold">{d.draft.name}</h1>
         {editable && (

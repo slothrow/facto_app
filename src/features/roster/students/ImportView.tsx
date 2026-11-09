@@ -48,8 +48,8 @@ export function ImportView() {
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={() => navigate('/roster/students')} className="flex h-11 items-center gap-1 text-base text-stone-600">
-        <ChevronLeft className="h-5 w-5" /> 학생 목록
+      <button type="button" onClick={() => navigate('/roster/students')} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-stone-300 bg-white pr-4 pl-2 text-lg font-semibold text-stone-800 shadow-sm active:bg-stone-100">
+        <ChevronLeft className="h-7 w-7" /> 학생 목록
       </button>
       <h1 className="text-xl font-bold">붙여넣기로 가져오기</h1>
 

@@ -8,7 +8,7 @@
 import { addDays, monthStart } from '../dates.ts';
 import { progressAt, stageForGrade, formatProgress, DEFAULT_CURRICULUM, type CurriculumSettings, type StageId } from '../curriculum.ts';
 import { classGradeCodeOn } from '../grade.ts';
-import type { DatedLabel, DayCell } from '../types.ts';
+import type { DatedLabel, DayCell, WeekNo } from '../types.ts';
 import {
   newId,
   type ClassRow,
@@ -230,21 +230,22 @@ export function planApply(input: ApplyInput): ApplyPlan {
     const cm = monthFor(c.weekday, date);
     let stage: StageId | null = null;
     let unit: number | null = null;
+    let unitWeek = 1;
     if (cm && real) {
       const p = progressAt(
         roster.progressAnchors.filter((a) => a.classId === real.id),
         cm,
       );
-      if (p.kind === 'unit') [stage, unit] = [p.stage, p.unit];
+      if (p.kind === 'unit') [stage, unit, unitWeek] = [p.stage, p.unit, p.week];
       else if (p.kind === 'basic') stage = 'basic';
     } else if (cm) {
       stage = c.startStage ?? stageForGrade(classGradeCodeOn(c, monthStart(cm)), curriculum);
       unit = stage === null || stage === 'basic' ? null : (c.startUnit ?? 1);
     }
     if (cm && stage) {
-      anchorsUp.push({ id: newId(), classId: id, courseMonth: cm, stage, unit, memo: '반 편성 적용' });
+      anchorsUp.push({ id: newId(), classId: id, courseMonth: cm, stage, unit, unitWeek: stage === 'basic' ? 1 : unitWeek, memo: '반 편성 적용' });
       lines.push(
-        `진도 ${formatProgress(stage === 'basic' ? { kind: 'basic' } : { kind: 'unit', stage, unit: unit! }, curriculum)}부터 (${Number(cm.slice(5, 7))}월 수업월)`,
+        `진도 ${formatProgress(stage === 'basic' ? { kind: 'basic' } : { kind: 'unit', stage, unit: unit!, week: unitWeek as WeekNo }, curriculum)}부터 (${Number(cm.slice(5, 7))}월 수업월)`,
       );
     } else {
       lines.push('진도 미설정 — 적용 후 반 상세에서 정해 주세요');

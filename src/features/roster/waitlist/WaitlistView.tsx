@@ -144,8 +144,8 @@ function ClassMatches({ classId }: { classId: string }) {
   const list = waitlistMatchesForClass(roster, cls, today);
   return (
     <div className="space-y-4">
-      <button type="button" onClick={() => navigate(`/roster/class/${classId}`)} className="flex h-11 items-center gap-1 text-base text-stone-600">
-        <ChevronLeft className="h-5 w-5" /> {classDisplayName(cls, today)}
+      <button type="button" onClick={() => navigate(`/roster/class/${classId}`)} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-stone-300 bg-white pr-4 pl-2 text-lg font-semibold text-stone-800 shadow-sm active:bg-stone-100">
+        <ChevronLeft className="h-7 w-7" /> {classDisplayName(cls, today)}
       </button>
       <h1 className="text-xl font-bold">이 반에 맞는 대기자 {list.length}명</h1>
       <ul className="overflow-hidden rounded-2xl border border-stone-200 bg-white">
@@ -209,8 +209,8 @@ function WaitlistDetail({ id }: { id: string }) {
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={() => navigate('/roster/waitlist')} className="flex h-11 items-center gap-1 text-base text-stone-600">
-        <ChevronLeft className="h-5 w-5" /> 대기자 목록
+      <button type="button" onClick={() => navigate('/roster/waitlist')} className="flex h-12 shrink-0 items-center gap-1 rounded-xl border border-stone-300 bg-white pr-4 pl-2 text-lg font-semibold text-stone-800 shadow-sm active:bg-stone-100">
+        <ChevronLeft className="h-7 w-7" /> 대기자 목록
       </button>
 
       <Card>
