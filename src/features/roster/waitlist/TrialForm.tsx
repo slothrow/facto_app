@@ -19,6 +19,8 @@ export function TrialForm({
   presetWaitlistId,
   presetDate,
   presetClassId,
+  presetTime,
+  presetGrade,
 }: {
   onClose: () => void;
   /** 있으면 수정 모드(삭제 버튼 포함) */
@@ -26,17 +28,22 @@ export function TrialForm({
   presetWaitlistId?: string;
   presetDate?: string;
   presetClassId?: string;
+  /** 따로 체험할 시간(새 반 시각 등) */
+  presetTime?: string;
+  /** 이름 직접 입력일 때 학년(오늘 기준 코드) */
+  presetGrade?: number;
 }) {
   const { roster, mutate } = useRoster();
   const today = todayStr();
   const presetClass = presetClassId ? roster.classes.find((c) => c.id === presetClassId) : null;
   const [date, setDate] = useState(initial?.date ?? presetDate ?? today);
   const [classId, setClassId] = useState(initial?.classId ?? presetClassId ?? '');
-  const [time, setTime] = useState(initial?.startTime ?? presetClass?.startTime ?? DEFAULT_TRIAL_TIME);
+  const [time, setTime] = useState(initial?.startTime ?? presetClass?.startTime ?? presetTime ?? DEFAULT_TRIAL_TIME);
   const [waitlistId, setWaitlistId] = useState(initial?.waitlistId ?? presetWaitlistId ?? '');
   const [name, setName] = useState(initial?.name ?? '');
   const [grade, setGrade] = useState<number | ''>(() => {
-    if (!initial || initial.gradeCode === null || initial.gradeBasisYear === null) return '';
+    if (!initial) return presetGrade ?? '';
+    if (initial.gradeCode === null || initial.gradeBasisYear === null) return '';
     return gradeCodeOn({ birthday: null, gradeCode: initial.gradeCode, gradeBasisYear: initial.gradeBasisYear }, today) ?? '';
   });
   const [memo, setMemo] = useState(initial?.memo ?? '');

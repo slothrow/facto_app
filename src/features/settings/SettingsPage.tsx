@@ -24,6 +24,7 @@ import { STORAGE_KEY } from '../../storage/localStorageRepository.ts';
 import type { AppData, ClosureRow, TrackAnchorRow } from '../../storage/types.ts';
 import { useAuth } from '../auth/AuthGate.tsx';
 import { CurriculumSettingsSection } from '../curriculum/CurriculumSettingsSection.tsx';
+import { HoursSection } from './HoursSection.tsx';
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 const withDay = (date: string) => `${date.slice(0, 4)}.${md(date)} (${WEEKDAY_NAMES[weekdayOf(date)]})`;
@@ -36,6 +37,7 @@ export function SettingsPage() {
       <div className="space-y-4 md:columns-2 md:gap-4 md:space-y-0 md:*:mb-4 md:*:break-inside-avoid">
       <AcademySection />
       <OperatingDaysSection />
+      <HoursSection />
       <AnchorsSection />
       <HolidaysSection />
       <ClosuresSection />

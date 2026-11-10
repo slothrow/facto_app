@@ -115,6 +115,8 @@ export interface WaitlistRow {
   stageHistory: { stage: WaitlistStage; date: string }[];
   memo: string | null;
   studentId: string | null;
+  /** 희망 시작 시기 'YYYY-MM'. 비우면 언제든. 5단계에 생긴 칸이라 예전 데이터엔 없을 수 있다 */
+  wishStartMonth?: string | null;
 }
 
 export interface TrialLessonRow {

@@ -129,6 +129,7 @@ function WaitlistRowButton({ w, today }: { w: WaitlistRow; today: string }) {
         <div className="truncate text-sm text-stone-500">
           {wishText(w)}
           {w.inquiredOn && ` · 문의 ${w.inquiredOn}`}
+          {w.wishStartMonth && ` · ${Number(w.wishStartMonth.slice(5, 7))}월 시작 희망`}
         </div>
       </div>
       {matches > 0 && <span className="shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-sm text-sky-900">가능한 반 {matches}</span>}
@@ -233,6 +234,14 @@ function WaitlistDetail({ id }: { id: string }) {
             <>
               <dt className="text-stone-500">문의일</dt>
               <dd>{w.inquiredOn}</dd>
+            </>
+          )}
+          {w.wishStartMonth && (
+            <>
+              <dt className="text-stone-500">시작 희망</dt>
+              <dd>
+                {w.wishStartMonth.slice(0, 4)}년 {Number(w.wishStartMonth.slice(5, 7))}월
+              </dd>
             </>
           )}
           {w.source && (
@@ -384,7 +393,15 @@ export function TrialList({ trials }: { trials: TrialLessonRow[] }) {
   );
 }
 
-function WaitlistForm({ initial, onClose }: { initial?: WaitlistRow; onClose: () => void }) {
+/** 빈자리 화면 등에서 미리 채워 여는 값 */
+export interface WaitlistPreset {
+  /** 오늘 기준 학년 코드 */
+  grade?: number;
+  wish?: WaitlistRow['wish'];
+  wishStartMonth?: string | null;
+}
+
+export function WaitlistForm({ initial, preset, onClose }: { initial?: WaitlistRow; preset?: WaitlistPreset; onClose: () => void }) {
   const { mutate } = useRoster();
   const today = todayStr();
   const [w, setW] = useState<WaitlistRow>(
@@ -395,16 +412,17 @@ function WaitlistForm({ initial, onClose }: { initial?: WaitlistRow; onClose: ()
       gradeBasisYear: null,
       birthday: null,
       guardian: { name: '', relation: 'mom', phone: '' },
-      wish: {},
+      wish: preset?.wish ?? {},
       inquiredOn: today,
       source: null,
       stage: 'inquiry',
       stageHistory: [{ stage: 'inquiry', date: today }],
       memo: null,
       studentId: null,
+      wishStartMonth: preset?.wishStartMonth ?? null,
     },
   );
-  const [grade, setGrade] = useState<number | ''>(initial ? (waitlistGradeOn(initial, today) ?? '') : '');
+  const [grade, setGrade] = useState<number | ''>(initial ? (waitlistGradeOn(initial, today) ?? '') : (preset?.grade ?? ''));
   const set = <K extends keyof WaitlistRow>(k: K, v: WaitlistRow[K]) => setW((p) => ({ ...p, [k]: v }));
   const g = w.guardian ?? { name: '', relation: 'mom' as GuardianRelation, phone: '' };
 
@@ -506,6 +524,9 @@ function WaitlistForm({ initial, onClose }: { initial?: WaitlistRow; onClose: ()
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
+          <Field label="희망 시작 시기">
+            <input type="month" className={inputClass} value={w.wishStartMonth ?? ''} onChange={(e) => set('wishStartMonth', e.target.value || null)} />
+          </Field>
           <Field label="문의일">
             <input type="date" className={inputClass} value={w.inquiredOn ?? ''} onChange={(e) => set('inquiredOn', e.target.value || null)} />
           </Field>

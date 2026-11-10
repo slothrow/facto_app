@@ -15,6 +15,12 @@ export interface AppSettings {
   curriculum?: Partial<Record<StageId, Partial<StageSetting>>>;
   /** 운영 시간대(요일별 첫 수업 시작~마지막 수업 끝). 4단계에 생긴 항목이라 없으면 13:30~18:30 */
   operatingHours?: Partial<Record<Weekday, { start: string; end: string }>>;
+  /** 학년별 선호 시간대(학년 코드 → 'HH:MM' 이후, null이면 없음). 5단계. 없으면 5·6·7세 16:00 이후 */
+  gradePreferredAfter?: Partial<Record<number, string | null>>;
+  /** 자동 할 일 규칙(켜기/끄기, 기준값). 5단계. 없으면 기본값 */
+  taskRules?: Partial<Record<string, { enabled?: boolean; params?: Record<string, number> }>>;
+  /** 마지막 백업 내보내기 시각(ISO). 5단계 */
+  lastBackupAt?: string | null;
 }
 
 /** track_anchors */
