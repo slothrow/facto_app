@@ -120,3 +120,60 @@ describe('bucketize', () => {
     expect(b.upcoming).toHaveLength(0);
   });
 });
+
+import { bucketize as bucketize2 } from './bucketize.ts';
+import { SEED_TEMPLATES, expandTemplates, lastMemoFor, templateTasksFrom } from './templates.ts';
+import type { TaskTemplateRow } from '../../storage/rosterTypes.ts';
+
+const tpl = (over: Partial<TaskTemplateRow>): TaskTemplateRow => ({
+  id: 't1',
+  title: '할 일',
+  description: null,
+  category: '운영',
+  recurrence: { type: 'monthly', day: 1 },
+  leadDays: 0,
+  enabled: true,
+  sort: 1,
+  memo: null,
+  ...over,
+});
+
+describe('expandTemplates', () => {
+  it("매월 'last' → 2027-02는 28일, 2028-02는 29일", () => {
+    const t = tpl({ recurrence: { type: 'monthly', day: 'last' } });
+    expect(expandTemplates([t], [], { from: '2027-02-01', to: '2027-02-28' }).map((o) => o.due)).toEqual(['2027-02-28']);
+    expect(expandTemplates([t], [], { from: '2028-02-01', to: '2028-02-29' }).map((o) => o.due)).toEqual(['2028-02-29']);
+  });
+
+  it('매월 31일은 짧은 달엔 말일', () => {
+    const t = tpl({ recurrence: { type: 'monthly', day: 31 } });
+    expect(expandTemplates([t], [], { from: '2027-04-01', to: '2027-04-30' }).map((o) => o.due)).toEqual(['2027-04-30']);
+  });
+
+  it('행사 "2027 페스티벌" 2027-09-26 + offset −42 → 2027-08-15, lead 7 → 08-08부터 표시', () => {
+    const t = tpl({ id: 'fest', recurrence: { type: 'event', keyword: '페스티벌', offsetDays: -42 }, leadDays: 7 });
+    const events = [{ label: '2027 수원 플레이팩토 페스티벌', date: '2027-09-26' }];
+    const occ = expandTemplates([t], events, { from: '2027-07-01', to: '2027-09-30' });
+    expect(occ.map((o) => o.due)).toEqual(['2027-08-15']);
+    const tasks = templateTasksFrom(occ, []);
+    expect(tasks[0].visibleFrom).toBe('2027-08-08');
+    expect(bucketize2(tasks, [], '2027-08-07').upcoming).toHaveLength(0);
+    expect(bucketize2(tasks, [], '2027-08-08').upcoming.map((x) => x.key)).toEqual(['tpl:fest:2027-08-15']);
+    // 행사가 없으면 뜨지 않음, 템플릿을 끄면 사라짐
+    expect(expandTemplates([t], [], { from: '2027-07-01', to: '2027-09-30' })).toHaveLength(0);
+    expect(expandTemplates([{ ...t, enabled: false }], events, { from: '2027-07-01', to: '2027-09-30' })).toHaveLength(0);
+  });
+
+  it('작년 메모: 2026-02-10 사업장현황신고 완료 메모가 2027-02-10 건에 표시', () => {
+    const t = tpl({ id: 'tax', title: '사업장현황신고', recurrence: { type: 'yearly', month: 2, day: 10 }, leadDays: 14 });
+    const states = [{ taskKey: 'tpl:tax:2026-02-10', status: 'done' as const, snoozeUntil: null, memo: '홈택스로 신고, 수입금액 확인', doneAt: '2026-02-09T00:00:00Z' }];
+    expect(lastMemoFor('tax', '2027-02-10', states)).toBe('홈택스로 신고, 수입금액 확인');
+    const tasks = templateTasksFrom(expandTemplates([t], [], { from: '2027-01-01', to: '2027-03-01' }), states);
+    expect(tasks[0].lastMemo).toBe('홈택스로 신고, 수입금액 확인');
+    expect(lastMemoFor('tax', '2026-02-10', states)).toBeNull();
+  });
+
+  it('초기 템플릿 16개', () => {
+    expect(SEED_TEMPLATES).toHaveLength(16);
+  });
+});

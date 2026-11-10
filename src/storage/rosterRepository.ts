@@ -1,10 +1,12 @@
 // 2단계 데이터 저장소. 화면은 이 인터페이스만 알고, 어디에 저장되는지는 모른다.
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { KeyValueStorage } from './localStorageRepository.ts';
+import { SEED_TEMPLATES } from '../engine/tasks/templates.ts';
 import {
   ROSTER_KEYS,
   applyChange,
   emptyRoster,
+  newId,
   type Guardian,
   type RosterChange,
   type RosterData,
@@ -55,6 +57,7 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   attendanceChecks: 'attendance_checks',
   tasks: 'tasks',
   taskStates: 'task_states',
+  taskTemplates: 'task_templates',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -78,6 +81,7 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   attendanceChecks: ['date', 'class_id'],
   tasks: ['id'],
   taskStates: ['task_key'],
+  taskTemplates: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);
@@ -198,7 +202,15 @@ export class LocalRosterRepository implements RosterRepository {
 
   async load(): Promise<RosterData> {
     const raw = this.storage.getItem(this.key);
-    return raw ? { ...emptyRoster(), ...(JSON.parse(raw) as Partial<RosterData>) } : emptyRoster();
+    const saved = raw ? (JSON.parse(raw) as Partial<RosterData>) : {};
+    // 반복 할 일 초기 템플릿(Supabase는 마이그레이션이 넣는다)
+    if (!saved.taskTemplates) {
+      // 한 번만 만들고 바로 저장한다(읽을 때마다 id가 바뀌면 할 일 상태가 끊긴다)
+      const seeded = { ...emptyRoster(), ...saved, taskTemplates: SEED_TEMPLATES.map((t) => ({ ...t, id: newId() })) };
+      this.write(seeded);
+      return seeded;
+    }
+    return { ...emptyRoster(), ...saved };
   }
 
   async apply(change: RosterChange): Promise<void> {

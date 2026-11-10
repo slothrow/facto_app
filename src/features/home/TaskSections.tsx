@@ -137,7 +137,7 @@ function TaskSheet({ task, today, onClose }: { task: ShownTask; today: string; o
           <Button onClick={() => save({ status: 'snoozed', snoozeUntil: addDays(today, 1) }, '내일로 미뤘어요')}>내일로 미루기</Button>
           <Button onClick={() => save({ status: 'snoozed', snoozeUntil: nextMonday(today) }, '다음 주 월요일로 미뤘어요')}>다음 주 월요일</Button>
         </div>
-        {task.kind === 'auto' && (
+        {task.kind !== 'manual' && (
           <Button variant="ghost" className="w-full" onClick={() => save({ status: 'hidden' }, '이번 건은 숨겼어요')}>
             이번 건 숨기기
           </Button>

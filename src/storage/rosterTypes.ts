@@ -286,6 +286,26 @@ export interface TaskRow {
   createdBy?: string | null;
 }
 
+export type TaskRecurrence =
+  | { type: 'monthly'; day: number | 'last' }
+  | { type: 'yearly'; month: number; day: number }
+  /** 행사일 이름에 keyword가 들어간 행사 날짜 + offsetDays */
+  | { type: 'event'; keyword: string; offsetDays: number };
+
+/** 반복 할 일 템플릿(SPEC_home 4.4) */
+export interface TaskTemplateRow {
+  id: string;
+  title: string;
+  description: string | null;
+  category: TaskCategory;
+  recurrence: TaskRecurrence;
+  /** 기한 며칠 전부터 보일지 */
+  leadDays: number;
+  enabled: boolean;
+  sort: number;
+  memo: string | null;
+}
+
 export type TaskStatus = 'done' | 'snoozed' | 'hidden';
 
 /** 모든 할 일의 상태(SPEC_home 4.1). 키 예: auto:calendar_export:2027-01, tpl:<id>:2027-02-10, manual:<id> */
@@ -318,6 +338,7 @@ export interface RosterData {
   attendanceChecks: AttendanceCheckRow[];
   tasks: TaskRow[];
   taskStates: TaskStateRow[];
+  taskTemplates: TaskTemplateRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -343,6 +364,7 @@ export const ROSTER_KEYS: RosterKey[] = [
   'attendanceChecks',
   'tasks',
   'taskStates',
+  'taskTemplates',
 ];
 
 export const emptyRoster = (): RosterData => ({
@@ -365,6 +387,7 @@ export const emptyRoster = (): RosterData => ({
   attendanceChecks: [],
   tasks: [],
   taskStates: [],
+  taskTemplates: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];

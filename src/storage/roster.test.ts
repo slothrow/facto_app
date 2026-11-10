@@ -74,7 +74,9 @@ describe('localStorage 저장소', () => {
     const mem = new Map<string, string>();
     const storage = { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) };
     const repo = new LocalRosterRepository(storage);
-    expect(await repo.load()).toEqual(emptyRoster());
+    // 처음엔 비어 있고 반복 할 일 초기 템플릿만 들어 있다
+    expect({ ...(await repo.load()), taskTemplates: [] }).toEqual(emptyRoster());
+    expect((await repo.load()).taskTemplates).toHaveLength(16);
     await repo.apply({ upsert: { classes: [cls('a')], students: [student('s1', '가')] } });
     const d = await repo.load();
     expect(d.classes).toHaveLength(1);
