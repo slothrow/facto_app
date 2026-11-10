@@ -46,7 +46,6 @@ import type { Weekday } from '../../engine/types.ts';
 import { CLASS_MINUTES, fromMinutes, toMinutes } from '../../engine/classTime.ts';
 import type { Placement } from '../../engine/simulator/index.ts';
 import type { SimClassRow } from '../../storage/rosterTypes.ts';
-import { WEEKDAY_NAMES } from '../roster/rosterModel.ts';
 import { ReviewPanel } from './ReviewPanel.tsx';
 import { SimClassDetail } from './SimClassDetail.tsx';
 import { SimClassSheet } from './SimClassSheet.tsx';
@@ -62,7 +61,6 @@ export function DraftEditor({ draftId }: { draftId: string }) {
   const { d, apply, quiet, undo, redo, canUndo, canRedo } = useSimEditor(draftId);
   const phonePortrait = useMedia('(max-width: 767px) and (orientation: portrait)');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [day, setDay] = useState<Weekday>(1);
   const [sheet, setSheet] = useState<{ preset?: { weekday: Weekday; startTime: string }; edit?: SimClassRow } | null>(null);
   const [merge, setMerge] = useState<{ from: string; into: string } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -258,14 +256,13 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     }
   };
 
-  const days: Weekday[] = phonePortrait ? [day] : SIM_WEEKDAYS;
+  const days: Weekday[] = SIM_WEEKDAYS;
   const changes = diffDraft(d.draft.baseSnapshot, d, d.draft.baseDate);
   const pickFromReview = (id: string) => {
     const c = d.classes.find((x) => x.id === id);
     const target = c?.mergedInto ? d.classes.find((x) => x.id === c.mergedInto) : c;
     if (!target) return;
     select(target.id);
-    if (phonePortrait) setDay(target.weekday);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const removed = removedClasses(d);
@@ -349,24 +346,6 @@ export function DraftEditor({ draftId }: { draftId: string }) {
         기준일 {d.draft.baseDate} · {summaryLine(summary)}
       </p>
 
-      {phonePortrait && (
-        <div role="tablist" className="grid grid-cols-5 gap-1">
-          {SIM_WEEKDAYS.map((wd) => (
-            <button
-              key={wd}
-              type="button"
-              role="tab"
-              aria-selected={day === wd}
-              onClick={() => setDay(wd)}
-              className={`h-11 rounded-xl text-base font-bold ${day === wd ? 'bg-emerald-700 text-white' : 'bg-white text-stone-700 border border-stone-200'}`}
-            >
-              {WEEKDAY_NAMES[wd]}
-              <span className="ml-0.5 text-xs font-normal">{liveClasses(d).filter((c) => c.weekday === wd).length}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="md:grid md:grid-cols-[1fr_14rem] md:items-start md:gap-4">
         <SimGrid
           days={days}
@@ -375,7 +354,6 @@ export function DraftEditor({ draftId }: { draftId: string }) {
           ghosts={ghosts}
           selectedId={selectedId}
           placement={selected && editable ? (wd, t) => canPlace(d, selected.id, wd, t, hours) : null}
-          compact={!phonePortrait}
           onCell={onCell}
           onBlock={onBlock}
           preview={preview}
@@ -473,7 +451,6 @@ export function DraftEditor({ draftId }: { draftId: string }) {
             } else {
               const { next, id } = addClass(d, f);
               apply(next);
-              if (phonePortrait) setDay(f.weekday);
               select(id);
               showToast('새 반을 만들었어요');
             }

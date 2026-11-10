@@ -2,6 +2,8 @@
 // 반 블록 높이 = 50분, 정시가 아닌 반(예: 3:40)도 정확한 위치. 옮긴 반은 원래 자리에 점선 흔적.
 // 반을 선택하면 시작 칸을 초록(가능)·노랑(경고)·회색(불가)으로 칠한다.
 // 드래그(dnd-kit): 반 블록 = 끌 수 있고 합치기 대상, 10분 칸 = 놓는 곳. DndContext 안에서만 쓴다.
+// 모양은 시간표(TimetableGrid)와 같게: 반 머리(학년·인원) + 아이 이름 한 줄에 한 명.
+// 폰에서도 월~금을 한 화면에 작은 글씨로, PC는 큰 글씨로 그린다.
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import type { MouseEvent, ReactNode } from 'react';
 import { CLASS_MINUTES, fromMinutes, shortTime, toMinutes } from '../../engine/classTime.ts';
@@ -46,7 +48,6 @@ export function SimGrid({
   selectedId,
   placement,
   waitDots,
-  compact,
   onCell,
   onBlock,
   preview,
@@ -63,7 +64,6 @@ export function SimGrid({
   placement: ((weekday: Weekday, start: string) => Placement) | null;
   /** 선택한 반 기준 대기자 희망 칸(키: "요일|HH:MM") */
   waitDots?: Map<string, number>;
-  compact: boolean;
   onCell: (weekday: Weekday, start: string) => void;
   onBlock: (id: string, tappedStart: string) => void;
   /** 끄는 중: 놓일 자리 미리보기 */
@@ -78,23 +78,21 @@ export function SimGrid({
   const labels = slots.filter((m) => m % 30 === 0);
 
   return (
-    <div className={compact ? '[--u:1.5px] md:[--u:2.1px]' : '[--u:2.3px]'}>
-      {days.length > 1 && (
-        <div className="flex gap-1">
-          <div className="w-9 shrink-0" />
-          {days.map((wd) => (
-            <div key={wd} className="min-w-0 flex-1 py-1 text-center text-sm font-bold text-stone-700">
-              {WEEKDAY_NAMES[wd]}
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="flex gap-1">
-        <div className="relative w-9 shrink-0" style={{ height: px(range.end - range.start) }}>
+    <div className="[--u:1.75px] md:[--u:2.7px]">
+      <div className="flex gap-0.5 md:gap-1">
+        <div className="w-7 shrink-0 md:w-12" />
+        {days.map((wd) => (
+          <div key={wd} className="min-w-0 flex-1 py-1 text-center text-sm font-bold text-stone-700 md:text-base">
+            {WEEKDAY_NAMES[wd]}
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-0.5 md:gap-1">
+        <div className="relative w-7 shrink-0 md:w-12" style={{ height: px(range.end - range.start) }}>
           {labels.map((m) => (
             <span
               key={m}
-              className={`absolute right-1 -translate-y-1/2 text-xs leading-none ${m % 60 === 30 ? 'font-semibold text-stone-600' : 'text-stone-400'}`}
+              className={`absolute right-0.5 -translate-y-1/2 leading-none ${m % 60 === 30 ? 'text-[11px] font-semibold text-stone-600 md:text-sm' : 'text-[10px] text-stone-400 md:text-xs'}`}
               style={{ top: px(m - range.start) }}
             >
               {shortTime(fromMinutes(m))}
@@ -104,7 +102,7 @@ export function SimGrid({
         {days.map((wd) => (
           <div
             key={wd}
-            className="relative min-w-0 flex-1 rounded-lg border border-stone-200 bg-white"
+            className="relative min-w-0 flex-1 rounded-lg border border-stone-200 bg-stone-50"
             style={{ height: px(range.end - range.start) }}
           >
             {/* 10분 칸: 탭하면 옮기기(선택 중) 또는 새 반 */}
@@ -139,7 +137,7 @@ export function SimGrid({
               .map((g) => (
                 <div
                   key={`${g.startTime}-${g.text}`}
-                  className="pointer-events-none absolute inset-x-0.5 flex items-start justify-center rounded-md border-2 border-dashed border-stone-400 bg-stone-50/60 p-0.5 text-center text-xs font-semibold text-stone-500"
+                  className="pointer-events-none absolute inset-x-0.5 flex items-start justify-center rounded-md border-2 border-dashed border-stone-400 bg-stone-50/60 p-0.5 text-center text-[10px] font-semibold leading-tight text-stone-500 md:text-sm"
                   style={{ top: px(toMinutes(g.startTime) - range.start), height: px(CLASS_MINUTES) }}
                 >
                   {g.text}
@@ -156,7 +154,6 @@ export function SimGrid({
                     range={range}
                     selected={selectedId === b.cls.id}
                     dim={selectedId !== null && selectedId !== b.cls.id}
-                    compact={compact}
                     onTap={onBlock}
                     onDouble={onBlockDouble}
                     dragging={draggingId === b.cls.id}
@@ -176,7 +173,6 @@ function Block({
   range,
   selected,
   dim,
-  compact,
   onTap,
   dragging,
   disabled,
@@ -186,7 +182,6 @@ function Block({
   range: { start: number; end: number };
   selected: boolean;
   dim: boolean;
-  compact: boolean;
   onTap: (id: string, tappedStart: string) => void;
   dragging: boolean;
   disabled: boolean;
@@ -216,8 +211,8 @@ function Block({
       data-sim-block={b.cls.id}
       {...drag.listeners}
       {...drag.attributes}
-      className={`absolute inset-x-0.5 z-10 flex select-none [-webkit-touch-callout:none] flex-col overflow-hidden rounded-md border px-1 py-0.5 text-left leading-tight shadow-sm ${
-        b.isNew ? 'border-emerald-500 bg-emerald-50' : 'border-sky-300 bg-sky-50'
+      className={`absolute inset-x-0.5 z-10 flex select-none [-webkit-touch-callout:none] flex-col overflow-hidden rounded-md border text-left shadow-sm ${
+        b.isNew ? 'border-emerald-500 bg-emerald-50/60' : b.warn ? 'border-amber-300 bg-white' : 'border-sky-200 bg-white'
       } ${selected ? 'z-20 ring-4 ring-emerald-600' : ''} ${dim ? 'opacity-80' : ''} ${dragging ? 'z-50 opacity-90 shadow-2xl' : ''} ${drop.isOver ? 'ring-4 ring-violet-500' : ''}`}
       style={{
         top: `calc(${start - range.start} * var(--u))`,
@@ -225,39 +220,56 @@ function Block({
         transform: t ? `translate3d(${t.x}px, ${t.y}px, 0)` : undefined,
       }}
     >
-      <span className="flex items-center gap-1">
-        <span className={`truncate font-bold ${compact ? 'text-xs' : 'text-sm'}`}>{b.grade}</span>
-        <span className={`ml-auto shrink-0 font-semibold ${compact ? 'text-[11px]' : 'text-sm'} ${over ? 'text-red-600' : 'text-stone-600'}`}>
-          {b.count}/4
+      {/* 반 머리: (정시 아닌 반은 시간) 학년 · 진도(PC) · 인원 */}
+      <span className={`flex w-full items-baseline gap-0.5 px-1 py-px md:gap-1 ${b.warn ? 'bg-amber-50' : b.isNew ? 'bg-emerald-100' : 'bg-sky-50'}`}>
+        <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-baseline md:gap-1">
+          {start % 60 !== 30 && (
+            <span className="self-start rounded bg-sky-100 px-0.5 text-[10px] font-bold leading-tight text-sky-800 md:shrink-0 md:px-1 md:text-xs">
+              {shortTime(b.cls.startTime)}
+            </span>
+          )}
+          <span className="truncate text-xs font-bold text-stone-900 md:text-sm">
+            {b.grade}
+            {b.cls.alias && <span className="font-semibold text-stone-500"> {b.cls.alias}</span>}
+            {b.progress && <span className="hidden font-normal text-stone-500 md:inline"> {b.progress}</span>}
+          </span>
         </span>
+        <span className={`shrink-0 text-[11px] font-semibold md:text-xs ${over ? 'text-red-600' : 'text-stone-500'}`}>{b.count}/4</span>
       </span>
-      <span className={`truncate text-stone-600 ${compact ? 'text-[10px]' : 'text-xs'}`}>
-        {start % 60 !== 30 && <span className="font-semibold text-sky-700">{shortTime(b.cls.startTime)} </span>}
-        {b.cls.alias && `${b.cls.alias} `}
-        {b.progress}
-      </span>
+      {/* 아이 이름: 한 줄에 한 명 */}
       {b.people && b.people.length > 0 && (
-        <span className={`flex flex-wrap gap-x-1 font-semibold leading-tight ${compact ? 'text-[10px]' : 'text-sm'}`}>
+        <span className="flex flex-col px-0.5 md:px-1">
           {b.people.map((p, i) => (
-            <span key={i} className={p.tone}>
+            <span key={i} className={`truncate text-[13px] leading-[15px] md:text-base md:leading-snug ${p.tone}`}>
               {p.name}
             </span>
           ))}
         </span>
       )}
-      <span className="flex flex-wrap gap-0.5">
-        {b.isNew && <Badge tone="bg-emerald-600 text-white">신규</Badge>}
-        {b.graduating && <Badge tone="bg-violet-600 text-white">졸업 대상</Badge>}
+      {/* 표시(신규·졸업·경고·메모·대기): 오른쪽 아래 */}
+      <span className="absolute right-0.5 bottom-0.5 flex flex-wrap justify-end gap-0.5">
+        {b.isNew && <Badge tone="bg-emerald-600 text-white" short="신">신규</Badge>}
+        {b.graduating && <Badge tone="bg-violet-600 text-white" short="졸">졸업 대상</Badge>}
         {b.warn && <Badge tone="bg-amber-400 text-amber-950">!</Badge>}
-        {b.memo && <Badge tone="bg-stone-200 text-stone-700">메모</Badge>}
-        {b.waitCount > 0 && <Badge tone="bg-sky-600 text-white">대기 {b.waitCount}</Badge>}
+        {b.memo && <Badge tone="bg-stone-200 text-stone-700" short="메">메모</Badge>}
+        {b.waitCount > 0 && <Badge tone="bg-sky-600 text-white" short={`대${b.waitCount}`}>대기 {b.waitCount}</Badge>}
       </span>
     </button>
   );
 }
 
-const Badge = ({ tone, children }: { tone: string; children: ReactNode }) => (
-  <span className={`rounded px-1 text-[10px] leading-tight font-bold ${tone}`}>{children}</span>
+/** 폰에서는 한 글자(short), PC에서는 전체 글자 */
+const Badge = ({ tone, short, children }: { tone: string; short?: string; children: ReactNode }) => (
+  <span className={`rounded px-0.5 text-[9px] leading-tight font-bold md:px-1 md:text-[11px] ${tone}`}>
+    {short ? (
+      <>
+        <span className="md:hidden">{short}</span>
+        <span className="hidden md:inline">{children}</span>
+      </>
+    ) : (
+      children
+    )}
+  </span>
 );
 
 function Cell({
@@ -287,7 +299,7 @@ function Cell({
       className={`absolute inset-x-0 ${line ? 'border-t border-stone-200' : ''} ${place ? PLACE_BG[place.kind] : 'active:bg-emerald-50'}`}
       style={{ top: px(top), height: px(10) }}
     >
-      {dots > 0 && <span className="absolute top-0 right-0.5 rounded-full bg-sky-600 px-1 text-[10px] leading-tight font-bold text-white">대기 {dots}</span>}
+      {dots > 0 && <span className="absolute top-0 right-0.5 rounded-full bg-sky-600 px-1 text-[9px] leading-tight font-bold text-white md:text-[11px]">대기 {dots}</span>}
     </button>
   );
 }
