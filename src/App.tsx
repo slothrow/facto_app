@@ -1,6 +1,8 @@
 import { AppDataProvider, useAppData } from './app/AppDataContext.tsx';
 import { navigate, useHashRoute } from './app/router.ts';
 import { TABS } from './app/tabs.tsx';
+import { helpFor } from './app/help.ts';
+import { HelpFooter } from './components/HelpFooter.tsx';
 import { AuthGate } from './features/auth/AuthGate.tsx';
 import { RosterProvider } from './app/RosterContext.tsx';
 import { LocalStorageRepository } from './storage/localStorageRepository.ts';
@@ -43,12 +45,14 @@ function Shell() {
   const [tabId, ...params] = useHashRoute();
   const { toast, revision } = useAppData();
   const tab = TABS.find((t) => t.id === tabId) ?? TABS[0];
+  const help = helpFor(tab.id, tab.id === tabId ? params : []);
 
   return (
     <div className="min-h-dvh bg-stone-50">
       {/* 폰: 480px 한 줄 / PC·태블릿(md 이상): 넓게 펼치고 화면마다 2단 배치 */}
       <main className="mx-auto w-full max-w-[480px] px-3 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:max-w-5xl md:px-6 md:pt-6">
         <div key={`${tab.id}-${revision}`}>{tab.render(params)}</div>
+        {help && <HelpFooter key={`help-${tab.id}-${params[0] ?? ''}`} help={help} />}
       </main>
 
       {toast && (
