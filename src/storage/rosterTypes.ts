@@ -264,6 +264,40 @@ export interface SimMemberRow {
   memo: string | null;
 }
 
+/** (날짜, 반) 출석 확인 완료 기록(SPEC_home 3.2). 결석을 표시하면 자동으로 남긴다 */
+export interface AttendanceCheckRow {
+  date: string;
+  classId: string;
+  checkedAt: string;
+  /** DB가 로그인 사용자로 채운다(앱은 보내지 않음) */
+  checkedBy?: string | null;
+}
+
+export type TaskCategory = '운영' | '행사' | '세무' | '홍보';
+
+/** 직접 추가한 할 일(SPEC_home 4.6) */
+export interface TaskRow {
+  id: string;
+  title: string;
+  dueDate: string;
+  memo: string | null;
+  category: TaskCategory | null;
+  createdAt: string;
+  createdBy?: string | null;
+}
+
+export type TaskStatus = 'done' | 'snoozed' | 'hidden';
+
+/** 모든 할 일의 상태(SPEC_home 4.1). 키 예: auto:calendar_export:2027-01, tpl:<id>:2027-02-10, manual:<id> */
+export interface TaskStateRow {
+  taskKey: string;
+  status: TaskStatus;
+  snoozeUntil: string | null;
+  memo: string | null;
+  doneAt: string | null;
+  doneBy?: string | null;
+}
+
 export interface RosterData {
   classes: ClassRow[];
   students: StudentRow[];
@@ -281,6 +315,9 @@ export interface RosterData {
   simDrafts: SimDraftRow[];
   simClasses: SimClassRow[];
   simMembers: SimMemberRow[];
+  attendanceChecks: AttendanceCheckRow[];
+  tasks: TaskRow[];
+  taskStates: TaskStateRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -303,6 +340,9 @@ export const ROSTER_KEYS: RosterKey[] = [
   'simDrafts',
   'simClasses',
   'simMembers',
+  'attendanceChecks',
+  'tasks',
+  'taskStates',
 ];
 
 export const emptyRoster = (): RosterData => ({
@@ -322,6 +362,9 @@ export const emptyRoster = (): RosterData => ({
   simDrafts: [],
   simClasses: [],
   simMembers: [],
+  attendanceChecks: [],
+  tasks: [],
+  taskStates: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];
@@ -339,6 +382,12 @@ export function rowKey<K extends RosterKey>(key: K, row: RowOf<K>): string {
     }
     case 'briefingTexts':
       return (row as BriefingTextRow).code;
+    case 'attendanceChecks': {
+      const r = row as AttendanceCheckRow;
+      return `${r.date}|${r.classId}`;
+    }
+    case 'taskStates':
+      return (row as TaskStateRow).taskKey;
     default:
       return (row as { id: string }).id;
   }

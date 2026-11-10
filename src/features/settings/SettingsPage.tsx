@@ -25,6 +25,10 @@ import type { AppData, ClosureRow, TrackAnchorRow } from '../../storage/types.ts
 import { useAuth } from '../auth/AuthGate.tsx';
 import { CurriculumSettingsSection } from '../curriculum/CurriculumSettingsSection.tsx';
 import { HoursSection } from './HoursSection.tsx';
+import { TaskRulesSection } from './TaskRulesSection.tsx';
+
+/** 예전 백업에 없으면 지금 데이터를 남기는 항목 */
+const KEEP_IF_MISSING = ['briefingTexts', 'tasks', 'taskStates'] as const;
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 const withDay = (date: string) => `${date.slice(0, 4)}.${md(date)} (${WEEKDAY_NAMES[weekdayOf(date)]})`;
@@ -44,6 +48,7 @@ export function SettingsPage() {
       <NoticeSection />
       <ThresholdSection />
       <CurriculumSettingsSection />
+      <TaskRulesSection />
       <DataSection />
       <AccountSection />
       </div>
@@ -363,7 +368,7 @@ function ThresholdSection() {
 }
 
 function DataSection() {
-  const { data, replaceAll, showToast } = useAppData();
+  const { data, replaceAll, showToast, commit } = useAppData();
   const fileRef = useRef<HTMLInputElement>(null);
   const { roster, replaceRoster } = useRoster();
   const [pendingRestore, setPendingRestore] = useState<FullBackup | null>(null);
@@ -380,6 +385,8 @@ function DataSection() {
     a.download = `facto-backup-${format(new Date(), 'yyyyMMdd-HHmm')}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    // 홈의 "백업 내보내기" 할 일이 이번 달엔 사라지게 마지막 백업 시각을 남긴다
+    void commit(updateSettings(data, { lastBackupAt: new Date().toISOString() }), '백업 파일을 저장했어요');
   };
 
   const onFile = async (file: File | undefined) => {
@@ -441,8 +448,9 @@ function DataSection() {
             const ok = await replaceAll(p.app, '백업으로 복원했어요');
             if (ok && p.roster) {
               try {
-                // 예전 백업에 없던 브리핑 문구는 지금 문구를 그대로 둔다(반·학생과 무관한 자료)
-                const restored = p.rosterMissing.includes('briefingTexts') ? { ...p.roster, briefingTexts: roster.briefingTexts } : p.roster;
+                // 예전 백업에 없던 자료(반·학생과 무관한 브리핑 문구, 할 일)는 지금 것을 그대로 둔다
+                const restored = { ...p.roster };
+                for (const k of KEEP_IF_MISSING) if (p.rosterMissing.includes(k)) (restored as Record<string, unknown>)[k] = roster[k];
                 await replaceRoster(restored);
               } catch (e) {
                 showToast(`학생 데이터를 복원하지 못했어요: ${e instanceof Error ? e.message : String(e)}`);

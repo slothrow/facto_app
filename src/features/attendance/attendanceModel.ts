@@ -4,7 +4,7 @@
 import { scheduleFor } from '../../app/scheduleInput.ts';
 import { isClassOpenOn, toMinutes } from '../../engine/classTime.ts';
 import type { DayCell } from '../../engine/types.ts';
-import type { AbsenceRow, ClassRow, RosterData, StudentRow, TrialLessonRow, WaitlistRow } from '../../storage/rosterTypes.ts';
+import type { AbsenceRow, ClassRow, RosterChange, RosterData, StudentRow, TrialLessonRow, WaitlistRow } from '../../storage/rosterTypes.ts';
 import type { AppData } from '../../storage/types.ts';
 import { classMembersOn } from '../roster/rosterModel.ts';
 
@@ -67,12 +67,19 @@ export function attendanceList(roster: RosterData, classId: string, date: string
   return [...members, ...trials];
 }
 
-/** 결석 표시/해제 → 저장할 변경 */
-export function toggleAbsence(roster: RosterData, date: string, classId: string, studentId: string) {
+/** 결석 표시/해제 → 저장할 변경. 결석을 표시하면 출석 확인도 자동으로 완료(SPEC_home 3.2) */
+export function toggleAbsence(roster: RosterData, date: string, classId: string, studentId: string, now = new Date().toISOString()): RosterChange {
   const row: AbsenceRow = { date, classId, studentId };
   const exists = roster.absences.some((a) => a.date === date && a.classId === classId && a.studentId === studentId);
-  return exists ? { remove: { absences: [row] } } : { upsert: { absences: [row] } };
+  if (exists) return { remove: { absences: [row] } };
+  const checked = roster.attendanceChecks.some((c) => c.date === date && c.classId === classId);
+  return { upsert: { absences: [row], ...(checked ? {} : { attendanceChecks: [{ date, classId, checkedAt: now }] }) } };
 }
+
+/** [확인 완료] 저장 */
+export const checkAttendance = (date: string, classId: string, now = new Date().toISOString()): RosterChange => ({
+  upsert: { attendanceChecks: [{ date, classId, checkedAt: now }] },
+});
 
 /** 학생 월별 결석 */
 export function absencesByMonth(absences: AbsenceRow[], studentId: string): { month: string; dates: string[] }[] {

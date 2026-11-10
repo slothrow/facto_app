@@ -10,7 +10,8 @@ import { formatTimeKo } from '../../engine/classTime.ts';
 import { addDays, weekdayOf } from '../../engine/dates.ts';
 import { CAPACITY, WEEKDAY_NAMES, classDisplayName, studentGradeLabel } from '../roster/rosterModel.ts';
 import { TrialForm } from '../roster/waitlist/TrialForm.tsx';
-import { attendanceList, classesOnDate, toggleAbsence } from './attendanceModel.ts';
+import { attendanceList, checkAttendance, classesOnDate, toggleAbsence } from './attendanceModel.ts';
+import { isAttendanceChecked } from '../home/taskModel.ts';
 
 const isDate = (s?: string): s is string => Boolean(s && /^\d{4}-\d{2}-\d{2}$/.test(s));
 const dateTitle = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WEEKDAY_NAMES[weekdayOf(d)]})`;
@@ -76,7 +77,10 @@ function DayClassList({ date }: { date: string }) {
                     <div className="text-base text-stone-600">{classDisplayName(c, date)}</div>
                   </div>
                   <div className="text-right text-base">
-                    <div className="font-semibold">{list.length}명</div>
+                    <div className="font-semibold">
+                      {isAttendanceChecked(roster, date, c.id) && <span className="mr-1 text-emerald-700">✓</span>}
+                      {list.length}명
+                    </div>
                     {absent > 0 && <div className="text-red-700">결석 {absent}</div>}
                   </div>
                 </button>
@@ -150,6 +154,15 @@ function ClassAttendance({ date, classId }: { date: string; classId: string }) {
             ),
           )}
         </ul>
+      )}
+      {isAttendanceChecked(roster, date, classId) ? (
+        <p className="flex min-h-12 items-center justify-center gap-1 rounded-2xl bg-emerald-50 text-base font-semibold text-emerald-800">
+          <CheckIcon className="h-5 w-5" /> 출석 확인 완료
+        </p>
+      ) : (
+        <Button variant="primary" className="w-full text-lg md:w-auto md:px-8" onClick={() => mutate(checkAttendance(date, classId), '출석 확인을 마쳤어요')}>
+          확인 완료 (전원 출석이면 눌러 주세요)
+        </Button>
       )}
       <Button className="w-full md:w-auto md:px-6" onClick={() => setAddingTrial(true)}>
         이 반에 체험수업 기록

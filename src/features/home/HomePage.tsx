@@ -1,4 +1,5 @@
-// 홈 탭(SPEC_home 3장). 오늘 수업 카드 → (23단계) 할 일 → 바로가기.
+// 홈 탭(SPEC_home 3장). 오늘 수업 카드 → 오늘 할 일 → 이번 주 → 다가오는 일 → 바로가기.
+import { useMemo } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
 import { navigate } from '../../app/router.ts';
 import { todayStr, useRoster } from '../../app/RosterContext.tsx';
@@ -10,6 +11,10 @@ import type { AppData } from '../../storage/types.ts';
 import { classesOnDate } from '../attendance/attendanceModel.ts';
 import { progressCount, recipients } from '../briefing/briefingModel.ts';
 import { WEEKDAY_NAMES, classDisplayName } from '../roster/rosterModel.ts';
+import { bucketize } from '../../engine/tasks/index.ts';
+import { TaskSections } from './TaskSections.tsx';
+import { allTasks, isAttendanceChecked } from './taskModel.ts';
+import { templateTasks } from './templateModel.ts';
 
 export const mdw = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WEEKDAY_NAMES[weekdayOf(d)]})`;
 
@@ -27,13 +32,20 @@ export function HomePage() {
   const { roster } = useRoster();
   const today = todayStr();
   const { classes, noClassReason } = classesOnDate(data, roster, today);
+  const checked = new Set(classes.filter((c) => isAttendanceChecked(roster, today, c.id)).map((c) => c.id));
+  const buckets = useMemo(() => {
+    const d = new Date();
+    const tasks = allTasks(data, roster, today, d.getHours() * 60 + d.getMinutes(), templateTasks(data, roster, today));
+    return bucketize(tasks, roster.taskStates, today);
+  }, [data, roster, today]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">{mdw(today)}</h1>
       <div className="md:grid md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-6">
         <div className="space-y-4">
-          <TodayClasses data={data} roster={roster} today={today} classes={classes} noClassReason={noClassReason} />
+          <TodayClasses data={data} roster={roster} today={today} classes={classes} noClassReason={noClassReason} checked={checked} />
+          <TaskSections buckets={buckets} today={today} />
         </div>
         <div className="mt-4 space-y-4 md:sticky md:top-6 md:mt-0">
           <Shortcuts />
