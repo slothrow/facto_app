@@ -8,7 +8,9 @@ import { formatTimeKo } from '../../engine/classTime.ts';
 import { addDays, weekdayOf } from '../../engine/dates.ts';
 import type { ClassRow, RosterData } from '../../storage/rosterTypes.ts';
 import type { AppData } from '../../storage/types.ts';
-import { classesOnDate } from '../attendance/attendanceModel.ts';
+import { classesOnDate, noClassReasonOf } from '../attendance/attendanceModel.ts';
+import { scheduleFor } from '../../app/scheduleInput.ts';
+import { isClassOpenOn } from '../../engine/classTime.ts';
 import { progressCount, recipients } from '../briefing/briefingModel.ts';
 import { WEEKDAY_NAMES, classDisplayName } from '../roster/rosterModel.ts';
 import { bucketize } from '../../engine/tasks/index.ts';
@@ -18,13 +20,11 @@ import { templateTasks } from './templateModel.ts';
 
 export const mdw = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일 (${WEEKDAY_NAMES[weekdayOf(d)]})`;
 
-/** 오늘 다음으로 수업이 있는 날(60일 안) */
+/** 오늘 다음으로 수업이 있는 날(60일 안). 회차 계산은 한 번만 한다 */
 function nextClassDay(data: AppData, roster: RosterData, today: string): string | null {
-  for (let i = 1; i <= 60; i++) {
-    const d = addDays(today, i);
-    if (classesOnDate(data, roster, d).classes.length > 0) return d;
-  }
-  return null;
+  const days = scheduleFor(data, { from: addDays(today, 1), to: addDays(today, 60) }).days;
+  const hit = days.find((d) => !noClassReasonOf(d) && roster.classes.some((c) => c.weekday === d.weekday && isClassOpenOn(c, d.date)));
+  return hit?.date ?? null;
 }
 
 export function HomePage() {

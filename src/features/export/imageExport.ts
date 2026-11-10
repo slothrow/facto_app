@@ -1,5 +1,4 @@
 // 달력 DOM → PNG, 저장·공유.
-import { toBlob } from 'html-to-image';
 
 /** 캡처 전에 Pretendard 네 굵기가 모두 불러와졌는지 기다린다(글자 깨짐 방지) */
 export async function waitForFonts() {
@@ -12,6 +11,8 @@ export async function waitForFonts() {
 /** 내보내기는 2배 해상도(1080 → 2160px) */
 export async function renderPng(node: HTMLElement, width: number, height: number): Promise<Blob> {
   await waitForFonts();
+  // 이미지 변환 도구는 안내 달력을 만들 때만 불러온다(첫 화면 로딩을 가볍게)
+  const { toBlob } = await import('html-to-image');
   const blob = await toBlob(node, { width, height, pixelRatio: 2, cacheBust: false });
   if (!blob) throw new Error('이미지를 만들지 못했습니다.');
   return blob;

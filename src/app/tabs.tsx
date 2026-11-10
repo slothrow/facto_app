@@ -1,10 +1,13 @@
 // 하단 탭 설정. 새 탭(반 편성, 학생 등록 등)은 이 배열에 한 줄 추가하면 된다.
-import type { ComponentType, ReactNode } from 'react';
+import { Suspense, lazy, type ComponentType, type ReactNode } from 'react';
+
+// 안내 달력 만들기(이미지 도구 포함)는 열 때만 불러온다
+const ExportPage = lazy(() => import('../features/export/ExportPage.tsx').then((m) => ({ default: m.ExportPage })));
 import { CalendarIcon, ChatIcon, GearIcon, HomeIcon, UsersIcon } from '../components/icons.tsx';
 import { HomePage } from '../features/home/HomePage.tsx';
 import { BriefingPage } from '../features/briefing/BriefingPage.tsx';
 import { AttendancePage } from '../features/attendance/AttendancePage.tsx';
-import { ExportPage } from '../features/export/ExportPage.tsx';
+
 import { MakeupPage } from '../features/makeup/MakeupPage.tsx';
 import { PlanPage } from '../features/plan/PlanPage.tsx';
 import { RosterPage } from '../features/roster/RosterPage.tsx';
@@ -28,7 +31,11 @@ export const TABS: TabDef[] = [
   { id: 'roster', label: '시간표', icon: UsersIcon, render: (params) => <RosterPage params={params} /> },
   { id: 'plan', label: '달력', icon: CalendarIcon, render: ([month]) => <PlanPage month={month} /> },
   { id: 'settings', label: '설정', icon: GearIcon, render: () => <SettingsPage /> },
-  { id: 'export', label: '안내 달력 만들기', icon: CalendarIcon, hiddenUnder: 'plan', render: () => <ExportPage /> },
+  { id: 'export', label: '안내 달력 만들기', icon: CalendarIcon, hiddenUnder: 'plan', render: () => (
+      <Suspense fallback={<p className="py-8 text-center text-base text-stone-500">불러오는 중…</p>}>
+        <ExportPage />
+      </Suspense>
+    ) },
   { id: 'attend', label: '출석', icon: CalendarIcon, hiddenUnder: 'plan', render: (params) => <AttendancePage params={params} /> },
   { id: 'makeup', label: '토요보강', icon: CalendarIcon, hiddenUnder: 'plan', render: ([month]) => <MakeupPage month={month} /> },
 ];

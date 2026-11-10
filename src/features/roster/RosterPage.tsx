@@ -2,7 +2,7 @@
 // 주소: #/roster/classes, #/roster/students, #/roster/waitlist, #/roster/class/<id>, #/roster/student/<id>,
 // #/roster/sim(시안 목록), #/roster/sim/<시안 id>, #/roster/sim/<시안 id>/apply, #/roster/sim-compare
 // (주소에는 id만 넣는다. 이름은 넣지 않는다)
-import type { ReactNode } from 'react';
+import { Suspense, lazy, type ReactNode } from 'react';
 import { navigate } from '../../app/router.ts';
 import { ClassDetail } from './classes/ClassDetail.tsx';
 import { ClassListView } from './classes/ClassListView.tsx';
@@ -10,10 +10,11 @@ import { StudentCard } from './students/StudentCard.tsx';
 import { StudentListView } from './students/StudentListView.tsx';
 import { WaitlistView } from './waitlist/WaitlistView.tsx';
 import { ProgressImportView } from '../curriculum/ProgressImportView.tsx';
-import { DraftEditor } from '../simulator/DraftEditor.tsx';
-import { DraftListView } from '../simulator/DraftListView.tsx';
-import { CompareView } from '../simulator/CompareView.tsx';
-import { ApplyView } from '../simulator/ApplyView.tsx';
+// 편성 화면(드래그 도구 포함)은 열 때만 불러온다(첫 화면 로딩을 가볍게)
+const DraftEditor = lazy(() => import('../simulator/DraftEditor.tsx').then((m) => ({ default: m.DraftEditor })));
+const DraftListView = lazy(() => import('../simulator/DraftListView.tsx').then((m) => ({ default: m.DraftListView })));
+const CompareView = lazy(() => import('../simulator/CompareView.tsx').then((m) => ({ default: m.CompareView })));
+const ApplyView = lazy(() => import('../simulator/ApplyView.tsx').then((m) => ({ default: m.ApplyView })));
 import { VacancyView } from '../vacancy/VacancyView.tsx';
 
 const SECTIONS = [
@@ -79,7 +80,7 @@ export function RosterPage({ params }: { params: string[] }) {
           </button>
         ))}
       </div>
-      {body}
+      <Suspense fallback={<p className="py-8 text-center text-base text-stone-500">불러오는 중…</p>}>{body}</Suspense>
     </div>
   );
 }

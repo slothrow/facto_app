@@ -33,6 +33,25 @@ describe('백업(학생 데이터 포함)', () => {
     expect(back.roster?.briefingTexts).toEqual([]);
     expect(back.rosterMissing).toEqual(['progressAnchors', 'basicLessons', 'briefingTexts', 'briefings']);
   });
+  it('5단계 표(출석 확인·할 일·할 일 상태·반복 할 일)도 백업에 들어가고, 예전 백업엔 빠졌다고 알려 준다', () => {
+    const app = createSeedAppData();
+    const roster = {
+      ...emptyRoster(),
+      attendanceChecks: [{ date: '2026-11-10', classId: 'c', checkedAt: '2026-11-10T08:00:00Z' }],
+      tasks: [{ id: 't', title: '전단지', dueDate: '2026-11-20', memo: null, category: null, createdAt: '2026-11-10T00:00:00Z' }],
+      taskStates: [{ taskKey: 'manual:t', status: 'done' as const, snoozeUntil: null, memo: '끝', doneAt: '2026-11-10T00:00:00Z' }],
+      taskTemplates: [{ id: 'tp', title: '교육비', description: null, category: '운영' as const, recurrence: { type: 'monthly' as const, day: 'last' as const }, leadDays: 3, enabled: true, sort: 1, memo: null }],
+    };
+    const back = parseFullBackup(toFullBackupJson(app, roster));
+    expect(back.roster).toEqual(roster);
+    expect(back.rosterMissing).toEqual([]);
+    const old = JSON.parse(toFullBackupJson(app, roster));
+    for (const k of ['attendanceChecks', 'tasks', 'taskStates', 'taskTemplates']) delete old.roster[k];
+    const oldBack = parseFullBackup(JSON.stringify(old));
+    expect(oldBack.rosterMissing).toEqual(['attendanceChecks', 'tasks', 'taskStates', 'taskTemplates']);
+    expect(oldBack.roster?.tasks).toEqual([]);
+  });
+
   it('예전 백업(학생 데이터 없음)도 읽는다', () => {
     const back = parseFullBackup(toBackupJson(createSeedAppData()));
     expect(back.roster).toBeNull();
