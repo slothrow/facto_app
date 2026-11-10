@@ -1,4 +1,5 @@
 // 달력 만들기 탭. SPEC 8.2.
+import { PlanSwitch } from '../plan/PlanSwitch.tsx';
 import { format } from 'date-fns';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
@@ -119,7 +120,10 @@ export function ExportPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">달력 만들기</h1>
+      <div className="md:max-w-md">
+        <PlanSwitch active="export" />
+      </div>
+      <h1 className="text-xl font-bold">안내 달력 만들기</h1>
 
       {/* 폰: 한 줄(order로 순서 지정) / PC: 왼쪽 미리보기, 오른쪽 기간·문구·기록 */}
       <div className="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,1fr)_380px] md:items-start md:gap-6">
@@ -178,7 +182,7 @@ export function ExportPage() {
               }}
             />
           </Field>
-          <Field label="강조 안내 (이번 회차 공지)" hint="행사, 시간표 조정 등. 비워 두면 표시하지 않습니다.">
+          <Field label="강조 안내 (이번 안내 공지)" hint="행사, 시간표 조정 등. 비워 두면 표시하지 않습니다.">
             <textarea
               className={`${inputClass} min-h-24 py-2 leading-relaxed`}
               value={highlight}

@@ -125,7 +125,7 @@ export function ApplyView({ draftId }: { draftId: string }) {
                   onClick={() => setMode(m)}
                   className={`h-10 rounded-lg text-sm font-semibold ${mode === m ? 'bg-white text-emerald-800 shadow-sm' : 'text-stone-600'}`}
                 >
-                  {m === 'month' ? '수업월 기준(기본)' : '날짜 기준'}
+                  {m === 'month' ? '○월 진도 기준(기본)' : '날짜 기준'}
                 </button>
               ))}
             </div>
@@ -138,7 +138,7 @@ export function ApplyView({ draftId }: { draftId: string }) {
                     </option>
                   ))}
                 </select>
-                <p className="mt-1 text-sm text-stone-500">반마다 그 요일의 "그 수업월 1주" 날짜부터 바뀌어요. 요일마다 날짜가 다를 수 있어요.</p>
+                <p className="mt-1 text-sm text-stone-500">반마다 그 요일의 "그 달 진도 1주" 날짜부터 바뀌어요. 요일마다 날짜가 다를 수 있어요.</p>
               </>
             ) : (
               <>

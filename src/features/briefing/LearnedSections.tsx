@@ -89,7 +89,7 @@ export function ClassBriefingStatus({ cls }: { cls: ClassRow }) {
   return (
     <Card title={`브리핑 현황 · ${courseMonthLabel(status.courseMonth)}`}>
       {status.days.length === 0 ? (
-        <p className="text-base text-stone-500">이번 수업월에 아직 지난 수업이 없어요.</p>
+        <p className="text-base text-stone-500">이번 달 진도에 아직 지난 수업이 없어요.</p>
       ) : (
         <ul className="divide-y divide-stone-100">
           {status.days.map((d) => {

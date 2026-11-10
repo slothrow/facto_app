@@ -85,7 +85,7 @@ function OperatingDaysSection() {
         options={[1, 2, 3, 4, 5]}
         onChange={(v) => commit(updateSettings(data, { operatingWeekdays: v as Weekday[] }))}
       />
-      <p className="mt-2 text-sm text-stone-500">끈 요일은 회차를 만들지 않습니다.</p>
+      <p className="mt-2 text-sm text-stone-500">끈 요일은 수업 날짜를 만들지 않습니다.</p>
     </Card>
   );
 }
@@ -95,7 +95,7 @@ function AnchorsSection() {
   return (
     <Card title="요일반 시작점">
       <p className="mb-3 text-sm text-stone-500">
-        요일마다 첫 수업 날짜와 그날의 회차입니다. 여기서부터 회차를 이어서 계산합니다.
+        요일마다 첫 수업 날짜와 그날의 진도(○월 진도 ○주)입니다. 여기서부터 수업을 이어서 계산합니다.
       </p>
       <div className="space-y-3">
         {data.trackAnchors.map((a) => (
@@ -116,7 +116,7 @@ function AnchorRow({ anchor }: { anchor: TrackAnchorRow }) {
   const name = WEEKDAY_NAMES[anchor.weekday];
 
   const save = () => {
-    if (!date || !courseMonth) return setError('날짜와 수업월을 모두 골라 주세요.');
+    if (!date || !courseMonth) return setError('날짜와 진도 월을 모두 골라 주세요.');
     if (weekdayOf(date) !== anchor.weekday) return setError(`${date}은(는) ${name}요일이 아닙니다.`);
     setError(null);
     commit(setTrackAnchor(data, { weekday: anchor.weekday, startDate: date, courseMonth, weekNo }));
@@ -133,9 +133,9 @@ function AnchorRow({ anchor }: { anchor: TrackAnchorRow }) {
         onChange={(e) => setDate(e.target.value)}
       />
       <div className="grid grid-cols-[1fr_6rem] gap-2">
-        <input type="month" aria-label={`${name}요일 수업월`} className={inputClass} value={courseMonth} onChange={(e) => setCourseMonth(e.target.value)} />
+        <input type="month" aria-label={`${name}요일 진도 월`} className={inputClass} value={courseMonth} onChange={(e) => setCourseMonth(e.target.value)} />
         <select
-          aria-label={`${name}요일 주차`}
+          aria-label={`${name}요일 주`}
           className={inputClass}
           value={weekNo}
           onChange={(e) => setWeekNo(Number(e.target.value) as WeekNo)}
@@ -293,7 +293,7 @@ function ClosuresSection() {
       {deleting && (
         <ConfirmDialog
           title="삭제할까요?"
-          body={`"${deleting.label}"을(를) 지웁니다. 휴원일이면 이후 회차가 다시 계산됩니다.`}
+          body={`"${deleting.label}"을(를) 지웁니다. 휴원일이면 이후 수업 날짜가 다시 계산됩니다.`}
           confirmLabel="삭제"
           danger
           onCancel={() => setDeleting(null)}
@@ -427,8 +427,8 @@ function DataSection() {
           title="백업으로 복원할까요?"
           body={
             pendingRestore.roster
-              ? '회차 계획과 학생·반 데이터가 모두 백업 파일 내용으로 바뀝니다. 되돌릴 수 없습니다.'
-              : '회차 계획 데이터가 백업 파일 내용으로 바뀝니다(이 파일에는 학생 데이터가 없어서 학생·반은 그대로). 되돌릴 수 없습니다.'
+              ? '수업 달력과 학생·반 데이터가 모두 백업 파일 내용으로 바뀝니다. 되돌릴 수 없습니다.'
+              : '수업 달력 데이터가 백업 파일 내용으로 바뀝니다(이 파일에는 학생 데이터가 없어서 학생·반은 그대로). 되돌릴 수 없습니다.'
           }
           confirmLabel="복원"
           danger
@@ -452,7 +452,7 @@ function DataSection() {
       {seedOpen && (
         <ConfirmDialog
           title="초기 데이터로 되돌릴까요?"
-          body="회차 계획에서 바꾼 내용이 모두 지워지고 처음 상태(2026년 11·12월 확정)로 돌아갑니다. 학생·반 데이터는 그대로예요. 되돌릴 수 없습니다."
+          body="수업 달력에서 바꾼 내용이 모두 지워지고 처음 상태(2026년 11·12월 확정)로 돌아갑니다. 학생·반 데이터는 그대로예요. 되돌릴 수 없습니다."
           confirmLabel="되돌리기"
           danger
           onCancel={() => setSeedOpen(false)}

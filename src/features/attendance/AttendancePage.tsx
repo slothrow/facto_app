@@ -86,7 +86,7 @@ function DayClassList({ date }: { date: string }) {
         </ul>
       )}
       <Button variant="ghost" className="w-full md:mx-auto md:block md:w-auto md:px-6" onClick={() => navigate(`/plan/${date.slice(0, 7)}`)}>
-        회차 계획 달력으로
+        수업 달력으로
       </Button>
     </div>
   );

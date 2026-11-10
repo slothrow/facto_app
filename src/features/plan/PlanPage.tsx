@@ -1,4 +1,4 @@
-// 회차 계획 탭. SPEC 8.1.
+// 수업 달력(달력 탭). SPEC 8.1.
 import { format } from 'date-fns';
 import { useMemo, useState } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
@@ -120,6 +120,9 @@ export function PlanPage({ month }: { month?: string }) {
       <Button variant="primary" className="order-1 flex w-full items-center justify-center gap-2 text-lg md:order-none" onClick={() => navigate(`/attend/${today}`)}>
         <CheckIcon className="h-6 w-6" /> 오늘 출석
       </Button>
+      <Button className="order-1 w-full md:order-none" onClick={() => navigate(`/makeup/${ym}`)}>
+        토요 보강데이 예약
+      </Button>
 
       <div className="order-5 md:order-none">
         <SummaryCard summary={summary} threshold={data.settings.offsetWarningThreshold} />
@@ -160,8 +163,8 @@ export function PlanPage({ month }: { month?: string }) {
 
       {dialog === 'confirm' && (
         <ConfirmDialog
-          title={`${mon} 회차를 확정할까요?`}
-          body="확정하면 앞 달을 바꿔도 이 달 회차는 그대로 유지됩니다. 학부모님께 안내 달력을 보내기 전에 확정하세요."
+          title={`${mon} 수업 달력을 확정할까요?`}
+          body="확정하면 앞 달을 바꿔도 이 달 수업 날짜는 그대로 유지됩니다. 학부모님께 안내 달력을 보내기 전에 확정하세요."
           confirmLabel="확정"
           onConfirm={doConfirm}
           onCancel={() => setDialog(null)}
@@ -170,7 +173,7 @@ export function PlanPage({ month }: { month?: string }) {
       {dialog === 'unconfirm' && (
         <ConfirmDialog
           title={`${mon} 확정을 해제할까요?`}
-          body="해제하면 이 달 회차가 규칙대로 다시 계산되어 바뀔 수 있습니다. 이미 학부모님께 안내했다면 주의하세요."
+          body="해제하면 이 달 수업 날짜가 규칙대로 다시 계산되어 바뀔 수 있습니다. 이미 학부모님께 안내했다면 주의하세요."
           confirmLabel="확정 해제"
           danger
           onConfirm={doUnconfirm}

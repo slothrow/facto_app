@@ -47,7 +47,7 @@ export function scheduleLookup(days: DayCell[]): ScheduleLookup {
 export type ApplyOption = { mode: 'month'; courseMonth: string } | { mode: 'date'; date: string };
 
 export const optionText = (o: ApplyOption) =>
-  o.mode === 'month' ? `${o.courseMonth.slice(0, 4)}년 ${Number(o.courseMonth.slice(5, 7))}월 수업월 기준` : `${o.date}부터(날짜 기준)`;
+  o.mode === 'month' ? `${o.courseMonth.slice(0, 4)}년 ${Number(o.courseMonth.slice(5, 7))}월 진도 기준` : `${o.date}부터(날짜 기준)`;
 
 export interface ApplyInput {
   draft: SimDraft;
@@ -127,7 +127,7 @@ export function planApply(input: ApplyInput): ApplyPlan {
     return `${slotText((real ?? c).weekday, (real ?? c).startTime)} ${simClassName(real ?? c, labelDate)}`;
   };
   const noDate = (c: SimClassRow) =>
-    errors.push(`${titleOf(c)}: 적용 날짜를 찾을 수 없어요(그 요일 회차 계획을 확인해 주세요)`);
+    errors.push(`${titleOf(c)}: 적용 날짜를 찾을 수 없어요(그 요일 수업 달력을 확인해 주세요)`);
 
   /** 실제 반 id → 폐반일(= 적용일) */
   const closeOf = new Map<string, string>();
@@ -245,7 +245,7 @@ export function planApply(input: ApplyInput): ApplyPlan {
     if (cm && stage) {
       anchorsUp.push({ id: newId(), classId: id, courseMonth: cm, stage, unit, unitWeek: stage === 'basic' ? 1 : unitWeek, memo: '반 편성 적용' });
       lines.push(
-        `진도 ${formatProgress(stage === 'basic' ? { kind: 'basic' } : { kind: 'unit', stage, unit: unit!, week: unitWeek as WeekNo }, curriculum)}부터 (${Number(cm.slice(5, 7))}월 수업월)`,
+        `진도 ${formatProgress(stage === 'basic' ? { kind: 'basic' } : { kind: 'unit', stage, unit: unit!, week: unitWeek as WeekNo }, curriculum)}부터 (${Number(cm.slice(5, 7))}월 진도)`,
       );
     } else {
       lines.push('진도 미설정 — 적용 후 반 상세에서 정해 주세요');

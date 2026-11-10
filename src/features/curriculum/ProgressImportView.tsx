@@ -42,7 +42,7 @@ export function ProgressImportView() {
       <Card>
         <ol className="list-decimal space-y-1 pl-5 text-base text-stone-700">
           <li>[양식 내려받기]로 반 목록 파일을 받아요.</li>
-          <li>엑셀에서 단계(베이직·K·P·A·B·S)와 단원(1~12)을 채워요. 단원 중간에서 시작하면 "3-2"처럼 주차까지 써요. 수업월은 그 진도를 한 수업월이에요.</li>
+          <li>엑셀에서 단계(베이직·K·P·A·B·S)와 단원(1~12)을 채워요. 단원 중간에서 시작하면 "3-2"처럼 주까지 써요. 수업월 칸에는 그 진도를 하는 달(○월 진도)을 써요.</li>
           <li>표 전체를 복사해서 아래에 붙여넣고 [저장]을 눌러요.</li>
         </ol>
         <Button className="mt-3 w-full" onClick={downloadTemplate}>

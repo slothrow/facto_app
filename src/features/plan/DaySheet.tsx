@@ -78,7 +78,7 @@ export function DaySheet({ cell, onClose }: { cell: DayCell; onClose: () => void
           <div className="space-y-2">
             {locked ? (
               <p className="rounded-xl bg-stone-100 p-3 text-base text-stone-600">
-                확정된 달입니다. 회차를 바꾸려면 먼저 이 달의 확정을 해제하세요.
+                확정된 달입니다. 수업 날짜를 바꾸려면 먼저 이 달의 확정을 해제하세요.
               </p>
             ) : !trackActive ? (
               <p className="rounded-xl bg-stone-100 p-3 text-base text-stone-600">
@@ -96,20 +96,20 @@ export function DaySheet({ cell, onClose }: { cell: DayCell; onClose: () => void
               <Button
                 variant="primary"
                 className="w-full"
-                onClick={() => previewSession('비우기 취소(다시 당기기)', setSkip(data, cell.date, false))}
+                onClick={() => previewSession('휴강 취소(다시 당기기)', setSkip(data, cell.date, false))}
               >
-                비우기 취소 (다시 당기기)
+                휴강 취소 (다시 당기기)
               </Button>
             ) : cell.status === 'session' ? (
               <>
                 <Button
                   className="w-full"
-                  onClick={() => previewSession('이 날 비우기', setSkip(data, cell.date, true))}
+                  onClick={() => previewSession('이 날 휴강', setSkip(data, cell.date, true))}
                 >
-                  이 날 비우기 (이후 회차 뒤로)
+                  이 날 휴강 (이후 수업 뒤로)
                 </Button>
                 <Button className="w-full" onClick={() => setPinOpen((v) => !v)}>
-                  회차 직접 지정
+                  진도 직접 지정
                 </Button>
                 {pinOpen && (
                   <PinPicker
@@ -153,7 +153,7 @@ function StatusLine({ cell }: { cell: DayCell }) {
     }`;
   } else if (cell.status === 'holiday') text = `공휴일 · ${cell.holidayName}`;
   else if (cell.status === 'closed') text = `휴원 · ${cell.closureLabel}`;
-  else if (cell.status === 'skipped') text = '비운 날 (수업 없음, 이후 회차가 뒤로 밀림)';
+  else if (cell.status === 'skipped') text = '휴강 (수업 없음, 이후 수업이 뒤로 밀림)';
   else if (cell.status === 'makeup') text = '보강데이';
   return <p className="text-base font-medium text-stone-700">{text}</p>;
 }
@@ -174,7 +174,7 @@ function PinPicker({
   return (
     <div className="space-y-3 rounded-xl border border-stone-200 p-3">
       <div className="grid grid-cols-2 gap-3">
-        <Field label="수업월">
+        <Field label="진도 월">
           <select className={inputClass} value={courseMonth} onChange={(e) => setCourseMonth(e.target.value)}>
             {months.map((m) => (
               <option key={m} value={m}>
@@ -183,7 +183,7 @@ function PinPicker({
             ))}
           </select>
         </Field>
-        <Field label="주차">
+        <Field label="주">
           <select
             className={inputClass}
             value={weekNo}

@@ -118,3 +118,10 @@ export const ShareIcon = ({ className }: P) => (
     <path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4" />
   </svg>
 );
+
+export const HomeIcon = ({ className }: P) => (
+  <svg {...base} className={className}>
+    <path d="M3 11l9-7 9 7" />
+    <path d="M5 10v10h5v-6h4v6h5V10" />
+  </svg>
+);

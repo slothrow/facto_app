@@ -10,10 +10,10 @@ type Col = 'weekday' | 'startTime' | 'courseMonth' | 'stage' | 'unit' | 'unitWee
 const HEADERS: Record<Col, string[]> = {
   weekday: ['요일'],
   startTime: ['시작시간', '시간', '시작'],
-  courseMonth: ['수업월'],
+  courseMonth: ['수업월', '진도월', '진도 월'],
   stage: ['단계'],
   unit: ['단원'],
-  unitWeek: ['주차'],
+  unitWeek: ['주차', '주'],
 };
 const ORDER: Col[] = ['weekday', 'startTime', 'courseMonth', 'stage', 'unit', 'unitWeek'];
 const norm = (s: string) => s.replace(/﻿/g, '').replace(/\s/g, '');
@@ -99,24 +99,24 @@ export function buildProgressImport(
     row.cls = found.cls;
     row.note = found.note;
     row.courseMonth = parseCourseMonth(get('courseMonth'));
-    if (!row.courseMonth) return fail('수업월을 읽을 수 없어요(예: 2026-12)');
+    if (!row.courseMonth) return fail('진도 월을 읽을 수 없어요(예: 2026-12)');
     row.stage = stageFromText(get('stage'), settings);
     if (!row.stage) return fail('단계를 읽을 수 없어요(베이직, K, P, A, B, S)');
     if (row.stage !== 'basic') {
       // "3" 또는 "3-2"(3단원 2주차)
       const m = /^(\d{1,2})(?:\s*-\s*(\d))?$/.exec(get('unit'));
       const u = m ? Number(m[1]) : NaN;
-      if (!Number.isInteger(u) || u < 1 || u > UNITS_PER_STAGE) return fail('단원은 1~12 (주차까지면 예: 3-2)');
+      if (!Number.isInteger(u) || u < 1 || u > UNITS_PER_STAGE) return fail('단원은 1~12 (주까지면 예: 3-2)');
       row.unit = u;
       const wText = m?.[2] ?? get('unitWeek');
       if (wText) {
         const w = Number(wText);
-        if (!Number.isInteger(w) || w < 1 || w > 4) return fail('주차는 1~4');
+        if (!Number.isInteger(w) || w < 1 || w > 4) return fail('주는 1~4');
         row.unitWeek = w;
       }
     }
     const key = `${row.cls.id}|${row.courseMonth}`;
-    if (seen.has(key)) return fail('같은 반·수업월이 위에 이미 있어요');
+    if (seen.has(key)) return fail('같은 반·진도 월이 위에 이미 있어요');
     seen.add(key);
     row.existing = roster.progressAnchors.find((a) => a.classId === row.cls!.id && a.courseMonth === row.courseMonth) ?? null;
     rows.push(row);

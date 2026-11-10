@@ -31,7 +31,7 @@ export function CurriculumSettingsSection() {
 
   return (
     <Card title="교육과정">
-      <p className="mb-2 text-sm text-stone-600">순서는 고정이에요: 베이직 → K → P → A → B → S. 한 수업월 = 한 단원(12단원 다음은 다음 단계).</p>
+      <p className="mb-2 text-sm text-stone-600">순서는 고정이에요: 베이직 → K → P → A → B → S. 한 달 진도(4번 수업) = 한 단원(12단원 다음은 다음 단계).</p>
       <div className="grid grid-cols-[4rem_1fr_1fr] items-center gap-2 text-base">
         <span className="text-sm font-semibold text-stone-500">단계</span>
         <span className="text-sm font-semibold text-stone-500">코드 앞 글자</span>

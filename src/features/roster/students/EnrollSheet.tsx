@@ -81,7 +81,7 @@ export function EnrollSheet({
             <b>{classDisplayName(target, today)}</b>에 <b>{student.name}</b> 넣기
           </p>
         )}
-        <Field label="적용일" hint={current ? '기본값: 새 반 요일의 다음 수업월 1주' : '기본값: 그 반의 다음 수업일'}>
+        <Field label="적용일" hint={current ? '기본값: 새 반 요일의 다음 달 진도 1주' : '기본값: 그 반의 다음 수업일'}>
           <input type="date" className={inputClass} value={applyDate} onChange={(e) => setDateEdited(e.target.value || null)} />
         </Field>
         {blocked && <p className="rounded-xl bg-red-50 p-3 text-base text-red-800">이 반은 이미 {count}명이라 더 넣을 수 없어요(최대 {CAPACITY_MAX}명).</p>}

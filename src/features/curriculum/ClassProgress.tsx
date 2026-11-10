@@ -29,10 +29,10 @@ export function ClassProgress({ cls }: { cls: ClassRow }) {
       </div>
       {nowCode.kind === 'code' && (
         <p className="mt-1 text-base text-stone-700">
-          이번 회차 <b className="text-emerald-800">{nowCode.code}</b>
+          이번 수업 <b className="text-emerald-800">{nowCode.code}</b>
         </p>
       )}
-      {now.progress.kind === 'unset' && <p className="mt-1 text-sm text-stone-600">기준점을 넣으면 수업월마다 단원이 자동으로 올라가요.</p>}
+      {now.progress.kind === 'unset' && <p className="mt-1 text-sm text-stone-600">기준점을 넣으면 달 진도마다 단원이 자동으로 올라가요.</p>}
       {now.progress.kind === 'basic' && <p className="mt-1 text-sm text-stone-600">베이직은 문구 관리 → 베이직 탭에서 날짜별 수업 내용을 미리 적어요.</p>}
 
       <h3 className="mt-4 mb-1 text-sm font-semibold text-stone-600">기준점</h3>
@@ -110,7 +110,7 @@ function AnchorForm({
   return (
     <BottomSheet title={initial ? '기준점 수정' : '기준점 추가'} onClose={onClose}>
       <div className="space-y-4">
-        <Field label="수업월" hint="달력월이 아니라 수업월(4회 묶음) 기준이에요">
+        <Field label="진도 월" hint="달력의 달이 아니라 ○월 진도(4번 수업 묶음) 기준이에요">
           <select className={inputClass} value={month} onChange={(e) => setMonth(e.target.value)}>
             {months.map((m) => (
               <option key={m} value={m}>
@@ -147,7 +147,7 @@ function AnchorForm({
           </Field>
         )}
         {stage !== 'basic' && (
-          <Field label="주차" hint="그 수업월 1회차가 몇 주차 수업인지 골라요">
+          <Field label="주" hint="그 달 진도 첫 수업이 몇 주 수업인지 골라요">
             <div className="grid grid-cols-4 gap-1">
               {[1, 2, 3, 4].map((w) => (
                 <button
@@ -163,7 +163,7 @@ function AnchorForm({
               ))}
             </div>
             <p className="mt-2 rounded-xl bg-emerald-50 p-3 text-base text-emerald-900">
-              {Number(month.slice(5, 7))}월 수업월:{' '}
+              {Number(month.slice(5, 7))}월 진도:{' '}
               {([1, 2, 3, 4] as const)
                 .map((w) => {
                   const r = codeFor([{ courseMonth: month, stage, unit, unitWeek }], { courseMonth: month, weekNo: w }, settings);
@@ -178,7 +178,7 @@ function AnchorForm({
             이 반 학년의 기본 단계는 {expected === 'basic' ? STAGE_NAMES.basic : settings[expected].prefix}예요. 맞는지 확인하세요(저장은 돼요).
           </p>
         )}
-        {sameMonth && <p className="rounded-xl bg-stone-100 p-3 text-base">이 수업월에 기준점이 이미 있어서 그걸 바꿔요.</p>}
+        {sameMonth && <p className="rounded-xl bg-stone-100 p-3 text-base">이 달 진도에 기준점이 이미 있어서 그걸 바꿔요.</p>}
         <Field label="메모 (선택)">
           <input className={inputClass} value={memo} onChange={(e) => setMemo(e.target.value)} />
         </Field>
@@ -194,7 +194,7 @@ function AnchorForm({
       {deleting && initial && (
         <ConfirmDialog
           title="기준점을 지울까요?"
-          body="지우면 이 수업월부터는 그 전 기준점으로 다시 계산돼요."
+          body="지우면 이 달 진도부터는 그 전 기준점으로 다시 계산돼요."
           confirmLabel="지우기"
           danger
           onCancel={() => setDeleting(false)}

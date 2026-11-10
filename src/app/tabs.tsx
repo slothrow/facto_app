@@ -1,6 +1,7 @@
 // 하단 탭 설정. 새 탭(반 편성, 학생 등록 등)은 이 배열에 한 줄 추가하면 된다.
 import type { ComponentType, ReactNode } from 'react';
-import { CalendarIcon, ChatIcon, GearIcon, ImageIcon, UsersIcon } from '../components/icons.tsx';
+import { CalendarIcon, ChatIcon, GearIcon, HomeIcon, UsersIcon } from '../components/icons.tsx';
+import { HomePage } from '../features/home/HomePage.tsx';
 import { BriefingPage } from '../features/briefing/BriefingPage.tsx';
 import { AttendancePage } from '../features/attendance/AttendancePage.tsx';
 import { ExportPage } from '../features/export/ExportPage.tsx';
@@ -20,12 +21,14 @@ export interface TabDef {
   hiddenUnder?: string;
 }
 
+// SPEC_home 1.1: 홈 / 브리핑 / 시간표 / 달력 / 설정. 숨은 화면은 hiddenUnder 탭이 켜진 것으로 표시
 export const TABS: TabDef[] = [
+  { id: 'home', label: '홈', icon: HomeIcon, render: () => <HomePage /> },
   { id: 'briefing', label: '브리핑', icon: ChatIcon, render: (params) => <BriefingPage params={params} /> },
   { id: 'roster', label: '시간표', icon: UsersIcon, render: (params) => <RosterPage params={params} /> },
   { id: 'plan', label: '달력', icon: CalendarIcon, render: ([month]) => <PlanPage month={month} /> },
-  { id: 'export', label: '달력배포', icon: ImageIcon, render: () => <ExportPage /> },
   { id: 'settings', label: '설정', icon: GearIcon, render: () => <SettingsPage /> },
+  { id: 'export', label: '안내 달력 만들기', icon: CalendarIcon, hiddenUnder: 'plan', render: () => <ExportPage /> },
   { id: 'attend', label: '출석', icon: CalendarIcon, hiddenUnder: 'plan', render: (params) => <AttendancePage params={params} /> },
   { id: 'makeup', label: '토요보강', icon: CalendarIcon, hiddenUnder: 'plan', render: ([month]) => <MakeupPage month={month} /> },
 ];

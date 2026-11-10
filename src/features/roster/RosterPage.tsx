@@ -1,4 +1,4 @@
-// 반·학생 탭. 상단 전환: [시간표] [학생] [대기자] [편성]
+// 시간표 탭. 상단 전환: [시간표] [학생] [대기자] [빈자리] [편성]. 빈자리: #/roster/vacancy
 // 주소: #/roster/classes, #/roster/students, #/roster/waitlist, #/roster/class/<id>, #/roster/student/<id>,
 // #/roster/sim(시안 목록), #/roster/sim/<시안 id>, #/roster/sim/<시안 id>/apply, #/roster/sim-compare
 // (주소에는 id만 넣는다. 이름은 넣지 않는다)
@@ -14,11 +14,13 @@ import { DraftEditor } from '../simulator/DraftEditor.tsx';
 import { DraftListView } from '../simulator/DraftListView.tsx';
 import { CompareView } from '../simulator/CompareView.tsx';
 import { ApplyView } from '../simulator/ApplyView.tsx';
+import { VacancyView } from '../vacancy/VacancyView.tsx';
 
 const SECTIONS = [
   { id: 'classes', label: '시간표' },
   { id: 'students', label: '학생' },
   { id: 'waitlist', label: '대기자' },
+  { id: 'vacancy', label: '빈자리' },
   { id: 'sim', label: '편성' },
 ] as const;
 
@@ -49,6 +51,9 @@ export function RosterPage({ params }: { params: string[] }) {
   } else if (view === 'students') {
     section = 'students';
     body = <StudentListView filterParam={id} />;
+  } else if (view === 'vacancy') {
+    section = 'vacancy';
+    body = <VacancyView />;
   } else if (view === 'waitlist') {
     section = 'waitlist';
     body = <WaitlistView itemId={id} mode={rest[0]} />;
@@ -58,7 +63,7 @@ export function RosterPage({ params }: { params: string[] }) {
 
   return (
     <div className="space-y-4">
-      <div role="tablist" className="grid grid-cols-4 gap-1 rounded-2xl bg-stone-200/70 p-1 md:max-w-lg">
+      <div role="tablist" className="grid grid-cols-5 gap-1 rounded-2xl bg-stone-200/70 p-1 md:max-w-xl">
         {SECTIONS.map((s) => (
           <button
             key={s.id}
@@ -66,7 +71,7 @@ export function RosterPage({ params }: { params: string[] }) {
             role="tab"
             aria-selected={section === s.id}
             onClick={() => navigate(`/roster/${s.id}`)}
-            className={`h-11 rounded-xl text-base font-semibold ${
+            className={`h-11 rounded-xl text-[15px] font-semibold md:text-base ${
               section === s.id ? 'bg-white text-emerald-800 shadow-sm' : 'text-stone-600'
             }`}
           >

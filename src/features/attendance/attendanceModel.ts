@@ -19,7 +19,7 @@ export function noClassReasonOf(cell: DayCell): string | null {
   if (cell.status === 'session') return null;
   if (cell.status === 'holiday') return `공휴일${cell.holidayName ? `(${cell.holidayName})` : ''}`;
   if (cell.status === 'closed') return `휴원${cell.closureLabel ? `(${cell.closureLabel})` : ''}`;
-  if (cell.status === 'skipped') return '비운 날';
+  if (cell.status === 'skipped') return '휴강';
   if (cell.status === 'makeup') return '보강데이';
   return cell.weekday === 0 || cell.weekday === 6 ? '주말' : '수업 없음';
 }

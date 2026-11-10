@@ -145,7 +145,7 @@ describe('영향 미리보기', () => {
   });
 
   it('변화가 없으면 그렇게 말한다', () => {
-    expect(describeImpact(seed, seed, '2027-01-04')).toEqual(['다른 회차에는 영향이 없습니다']);
+    expect(describeImpact(seed, seed, '2027-01-04')).toEqual(['다른 수업 날짜에는 영향이 없습니다']);
   });
 });
 

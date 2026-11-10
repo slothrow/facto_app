@@ -26,7 +26,7 @@ export function describeImpact(before: AppData, after: AppData, fromDate: string
     const allSame = diffs.every((d) => d === diffs[0]);
     if (allSame && diffs[0] < 0) lines.push(`이후 ${name} ${diffs.length}회가 ${-diffs[0]}회씩 밀립니다`);
     else if (allSame) lines.push(`이후 ${name} ${diffs.length}회가 ${diffs[0]}회씩 당겨집니다`);
-    else lines.push(`${name} 회차 ${diffs.length}개가 바뀝니다`);
+    else lines.push(`${name} 수업 ${diffs.length}개가 바뀝니다`);
   }
 
   const beforeMsgs = new Set(a.warnings.map((w) => w.message));
@@ -34,5 +34,5 @@ export function describeImpact(before: AppData, after: AppData, fromDate: string
   for (const m of afterMsgs) if (!beforeMsgs.has(m)) lines.push(`새 경고: ${m}`);
   for (const m of beforeMsgs) if (!afterMsgs.has(m)) lines.push(`사라지는 경고: ${m}`);
 
-  return lines.length > 0 ? lines : ['다른 회차에는 영향이 없습니다'];
+  return lines.length > 0 ? lines : ['다른 수업 날짜에는 영향이 없습니다'];
 }

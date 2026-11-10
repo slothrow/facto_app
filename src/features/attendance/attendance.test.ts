@@ -41,7 +41,7 @@ describe('그 날짜의 수업 반', () => {
     // 비운 날(확정되지 않은 달에서)
     const { session } = findDays(2, '2027-01-01');
     const skipped = { ...data, sessionOverrides: [{ date: session, type: 'skip' as const }] };
-    expect(classesOnDate(skipped, roster, session).noClassReason).toBe('비운 날');
+    expect(classesOnDate(skipped, roster, session).noClassReason).toBe('휴강');
     // 설 대체공휴일(2027-02-09 화) = 공휴일
     expect(classesOnDate(data, roster, '2027-02-09').noClassReason).toMatch(/^공휴일/);
   });

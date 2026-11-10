@@ -23,8 +23,8 @@ export const curriculumOf = (data: AppData): CurriculumSettings => withCurriculu
 export const anchorsOf = (roster: Pick<RosterData, 'progressAnchors'>, classId: string): ProgressAnchorRow[] =>
   roster.progressAnchors.filter((a) => a.classId === classId).sort((a, b) => b.courseMonth.localeCompare(a.courseMonth));
 
-export const courseMonthLabel = (ym: string) => `${monthName(ym)} 수업월`;
-export const courseMonthFull = (ym: string) => `${ym.slice(0, 4)}년 ${monthName(ym)} 수업월`;
+export const courseMonthLabel = (ym: string) => `${monthName(ym)} 진도`;
+export const courseMonthFull = (ym: string) => `${ym.slice(0, 4)}년 ${monthName(ym)} 진도`;
 
 /** 기간 안의 날짜별 칸(회차 엔진 결과) */
 export function cellsByDate(data: AppData, from: string, to: string): Map<string, DayCell> {
