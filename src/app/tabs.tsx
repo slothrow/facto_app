@@ -3,8 +3,9 @@ import { Suspense, lazy, type ComponentType, type ReactNode } from 'react';
 
 // 안내 달력 만들기(이미지 도구 포함)는 열 때만 불러온다
 const ExportPage = lazy(() => import('../features/export/ExportPage.tsx').then((m) => ({ default: m.ExportPage })));
-import { CalendarIcon, ChatIcon, GearIcon, HomeIcon, UsersIcon } from '../components/icons.tsx';
-import { HomePage } from '../features/home/HomePage.tsx';
+import { CalendarIcon, ChatIcon, CheckIcon, GearIcon, UsersIcon } from '../components/icons.tsx';
+// 예전 홈(features/home: 오늘 수업·할 일 알림)은 보관 중(26단계, CLAUDE.md "보관 중인 모듈")
+import { TodoPage } from '../features/todos/TodoPage.tsx';
 import { BriefingPage } from '../features/briefing/BriefingPage.tsx';
 import { AttendancePage } from '../features/attendance/AttendancePage.tsx';
 
@@ -24,9 +25,9 @@ export interface TabDef {
   hiddenUnder?: string;
 }
 
-// SPEC_home 1.1: 홈 / 브리핑 / 시간표 / 달력 / 설정. 숨은 화면은 hiddenUnder 탭이 켜진 것으로 표시
+// SPEC_home 1.1·6장: 할 일(주소는 예전 그대로 #/home) / 브리핑 / 시간표 / 달력 / 설정. 숨은 화면은 hiddenUnder 탭이 켜진 것으로 표시
 export const TABS: TabDef[] = [
-  { id: 'home', label: '홈', icon: HomeIcon, render: () => <HomePage /> },
+  { id: 'home', label: '할 일', icon: CheckIcon, render: () => <TodoPage /> },
   { id: 'briefing', label: '브리핑', icon: ChatIcon, render: (params) => <BriefingPage params={params} /> },
   { id: 'roster', label: '시간표', icon: UsersIcon, render: (params) => <RosterPage params={params} /> },
   { id: 'plan', label: '달력', icon: CalendarIcon, render: ([month]) => <PlanPage month={month} /> },

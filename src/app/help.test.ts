@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { helpFor } from './help.ts';
 
 const ROUTES: [string, string[], string][] = [
-  ['home', [], '홈'],
+  ['home', [], '할 일'],
   ['briefing', [], '수업 후 브리핑'],
   ['briefing', ['texts'], '문구 관리'],
   ['roster', [], '시간표'],

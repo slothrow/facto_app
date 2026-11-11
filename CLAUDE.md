@@ -12,7 +12,7 @@
   - `docs/SPEC_students.md` — 2단계: 반·학생·대기자·체험수업·결석
   - `docs/SPEC_briefing.md` — 3단계: 교육과정 진도, 브리핑 문구, 수업 후 브리핑(카톡 공유)
   - `docs/SPEC_simulator.md` — 4단계: 반 편성 시뮬레이터(시안에서 반 옮기기·합치기·검토 → 적용)
-  - `docs/SPEC_home.md` — 5단계: 탭 재구성(홈/브리핑/시간표/달력/설정), 빈자리 현황, 할 일 홈
+  - `docs/SPEC_home.md` — 5단계: 탭 재구성(홈/브리핑/시간표/달력/설정), 빈자리 현황, 할 일 홈(보관됨), 8장 공용 할 일 달력(26단계)
 
 ## 개발자에 대해
 - 개발자는 Claude Code로 바이브 코딩을 한다. Supabase·Vercel은 설치만 했고 개념은 잘 모른다.
@@ -69,7 +69,19 @@
 | 희망 시작 시기 | `wishStartMonth` (`'YYYY-MM'`) | 희망 시작 시기 | 대기자가 다니기 시작하고 싶은 달. 비우면 언제든 |
 | 자동 할 일 | `autoTask` | 자동 할 일 | 앱 데이터에서 규칙으로 계산되는 할 일(안내 달력 만들기, 출석 확인 등). 상태만 저장 |
 | 반복 할 일 | `taskTemplate` | 반복 할 일 | 매월·매년·행사 기준 템플릿에서 날짜별로 생기는 할 일 |
+| 할 일(달력) | `todo` | 할 일 | 공용 할 일 달력의 한 줄(날짜, 글, 완료, 별표). 26단계부터 하단 첫 탭 |
 | 출석 확인 | `attendanceCheck` | 출석 확인 | (날짜, 반) 출석 체크를 마쳤다는 기록. 결석을 표시하면 자동으로 남는다 |
+
+## 보관 중인 모듈
+### 할 일 알림(자동·반복·직접 할 일) — 26단계에 보관
+- **목적**: 앱 데이터를 보고 할 일을 자동으로 만들어 홈에 띄우던 기능(안내 달력 만들기, 출석 확인, 대기자 후속 연락, 매월·매년 반복 업무 등, SPEC_home 3~4장). 26단계에 홈을 단순한 공용 할 일 달력(SPEC_home 8장)으로 바꾸면서 화면에서만 숨겼다.
+- **코드**: `src/engine/tasks/`(자동 규칙·반복 템플릿·나누기, 테스트 `tasks.test.ts` 계속 실행), `src/features/home/`(예전 홈 화면·할 일 묶음, 화면에 연결 안 됨), `src/features/settings/TaskRulesSection.tsx`·`TemplatesSection.tsx`(설정 → 할 일 관리).
+- **표**: `tasks`(직접 추가), `task_states`(완료·미루기·숨김), `task_templates`(반복 템플릿). 마이그레이션 `20261111000100_tasks.sql`, `20261111000200_task_templates.sql`. 지우지 말 것. 백업·복원에도 계속 들어간다.
+- **계속 쓰는 것**: 출석 화면의 [확인 완료](`attendance_checks`, `features/home/taskModel.ts`의 `isAttendanceChecked`)와 빈자리.
+- **다시 켜는 방법**: 설정값 `settings.features.reminders = true` → 설정에 할 일 관리가 다시 보인다(판단: `features/todos/todoModel.ts`의 `remindersOn`). 지금은 화면 스위치가 없어서 Supabase SQL Editor에서
+  `update public.settings set data = jsonb_set(data, '{features}', '{"reminders": true}') where id = 1;` (끄려면 `false`).
+  예전 홈 화면까지 되살리려면 `src/app/tabs.tsx`에서 `features/home/HomePage.tsx`를 다시 연결한다.
+- **나중 방향**: ① 자동·반복 할 일을 할 일 달력에 **'추천 할 일'**로 흐리게 보여 주고, 사용자가 [추가]를 누르면 그 날짜의 `todos` 한 줄로 채택(채택·무시는 `task_states`에 기록). ② 텔레그램 알림을 붙일 때 이 엔진(`buildAutoTasks`, 반복 템플릿)을 알림 내용의 데이터 원천으로 쓴다.
 
 ## 핵심 규칙 요약 (상세: SPEC.md 3장)
 1. 요일반마다 독립적으로, 수업 가능한 날짜를 순서대로 채워 회차를 이어 붙인다(롤링). 4주 다음은 다음 수업월 1주.
@@ -78,7 +90,7 @@
 4. 스케줄 엔진은 UI·DB와 분리된 순수 함수(`src/engine`)로 만들고, 모든 규칙은 테스트로 검증한다.
 
 ## 작업 원칙
-- `PROMPTS.md`(1~5단계), `PROMPTS_2.md`(6~10단계), `PROMPTS_3.md`(11~15단계), `PROMPTS_4.md`(16~20단계), `PROMPTS_5.md`(21~25단계)의 단계별로 진행한다. 한 단계가 끝나면 ① 만든 것 요약 ② 내가 직접 확인하는 방법 ③ git 커밋.
+- `PROMPTS.md`(1~5단계), `PROMPTS_2.md`(6~10단계), `PROMPTS_3.md`(11~15단계), `PROMPTS_4.md`(16~20단계), `PROMPTS_5.md`(21~25단계)의 단계별로 진행한다(26단계부터는 대화로 받은 지시). 한 단계가 끝나면 ① 만든 것 요약 ② 내가 직접 확인하는 방법 ③ git 커밋.
 - 엔진 로직을 고칠 때는 테스트부터. SPEC 7장의 기준 데이터 테스트는 절대 깨지면 안 된다.
 - 모바일 우선 UI: 폭 360~430px 기준, 터치 영역 44px 이상, 글씨는 크게. PC에서도 깨지지 않게.
 - 아이들 개인정보 보안(상세: SPEC_students.md 11장):

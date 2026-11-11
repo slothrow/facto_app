@@ -318,6 +318,19 @@ export interface TaskStateRow {
   doneBy?: string | null;
 }
 
+/** 공용 할 일 달력의 한 줄(26단계, SPEC_home 8장) */
+export interface TodoRow {
+  id: string;
+  date: string;
+  text: string;
+  done: boolean;
+  starred: boolean;
+  /** 같은 날짜 안의 순서(작을수록 위) */
+  sort: number;
+  /** DB가 로그인 사용자로 채운다 */
+  createdBy?: string | null;
+}
+
 export interface RosterData {
   classes: ClassRow[];
   students: StudentRow[];
@@ -339,6 +352,7 @@ export interface RosterData {
   tasks: TaskRow[];
   taskStates: TaskStateRow[];
   taskTemplates: TaskTemplateRow[];
+  todos: TodoRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -365,6 +379,7 @@ export const ROSTER_KEYS: RosterKey[] = [
   'tasks',
   'taskStates',
   'taskTemplates',
+  'todos',
 ];
 
 export const emptyRoster = (): RosterData => ({
@@ -388,6 +403,7 @@ export const emptyRoster = (): RosterData => ({
   tasks: [],
   taskStates: [],
   taskTemplates: [],
+  todos: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];

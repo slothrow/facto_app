@@ -58,6 +58,7 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   tasks: 'tasks',
   taskStates: 'task_states',
   taskTemplates: 'task_templates',
+  todos: 'todos',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -82,6 +83,7 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   tasks: ['id'],
   taskStates: ['task_key'],
   taskTemplates: ['id'],
+  todos: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);

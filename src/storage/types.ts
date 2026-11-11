@@ -21,6 +21,8 @@ export interface AppSettings {
   taskRules?: Partial<Record<string, { enabled?: boolean; params?: Record<string, number> }>>;
   /** 마지막 백업 내보내기 시각(ISO). 5단계 */
   lastBackupAt?: string | null;
+  /** 기능 켜기/끄기. 26단계. reminders = 예전 할 일 알림(보관 중, 기본 꺼짐) */
+  features?: { reminders?: boolean };
 }
 
 /** track_anchors */
