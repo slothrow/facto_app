@@ -64,6 +64,8 @@ export interface StudentRow {
   needsReview: boolean;
   /** 카톡 대화방 검색어(예: "홍길동 7세"). 비우면 이름을 쓴다. 3단계에 생긴 칸이라 예전 데이터엔 없을 수 있다 */
   kakaoSearch?: string | null;
+  /** 부르는 이름(개인브리핑 {이름} 자리). 비면 이름에서 자동으로 만든다. 27단계에 생긴 칸 */
+  callName?: string | null;
 }
 
 /** 한 쌍을 한 줄로. studentId < siblingId */
@@ -183,12 +185,20 @@ export interface BriefingTextRow {
   text: string;
 }
 
+/** 개인 문구 저장소: 코드당 문구 1개({이름} 자리 포함) */
+export type PersonalBriefingTextRow = BriefingTextRow;
+
+/** class = 전체브리핑, personal = 개인브리핑 */
+export type BriefingKind = 'class' | 'personal';
+
 /** 보낸 기록. textSnapshot = 실제로 보낸 문구 */
 export interface BriefingRow {
   id: string;
   date: string;
   classId: string;
   studentId: string;
+  /** 27단계에 생긴 칸. 없으면 class */
+  kind?: BriefingKind;
   code: string;
   textSnapshot: string;
   /** ISO 시각 */
@@ -344,6 +354,7 @@ export interface RosterData {
   progressAnchors: ProgressAnchorRow[];
   basicLessons: BasicLessonRow[];
   briefingTexts: BriefingTextRow[];
+  personalBriefingTexts: PersonalBriefingTextRow[];
   briefings: BriefingRow[];
   simDrafts: SimDraftRow[];
   simClasses: SimClassRow[];
@@ -371,6 +382,7 @@ export const ROSTER_KEYS: RosterKey[] = [
   'progressAnchors',
   'basicLessons',
   'briefingTexts',
+  'personalBriefingTexts',
   'briefings',
   'simDrafts',
   'simClasses',
@@ -395,6 +407,7 @@ export const emptyRoster = (): RosterData => ({
   progressAnchors: [],
   basicLessons: [],
   briefingTexts: [],
+  personalBriefingTexts: [],
   briefings: [],
   simDrafts: [],
   simClasses: [],
@@ -420,6 +433,7 @@ export function rowKey<K extends RosterKey>(key: K, row: RowOf<K>): string {
       return `${r.date}|${r.classId}|${r.studentId}`;
     }
     case 'briefingTexts':
+    case 'personalBriefingTexts':
       return (row as BriefingTextRow).code;
     case 'attendanceChecks': {
       const r = row as AttendanceCheckRow;

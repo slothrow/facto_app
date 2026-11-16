@@ -3,7 +3,7 @@ import { CLASS_MINUTES, toMinutes } from '../../engine/classTime.ts';
 import type { CodeResult, CurriculumSettings } from '../../engine/curriculum.ts';
 import { codeFor } from '../../engine/curriculum.ts';
 import type { DayCell } from '../../engine/types.ts';
-import { newId, type BasicLessonRow, type BriefingRow, type ClassRow, type RosterChange, type RosterData, type StudentRow } from '../../storage/rosterTypes.ts';
+import { newId, type BasicLessonRow, type BriefingKind, type BriefingRow, type ClassRow, type RosterChange, type RosterData, type StudentRow } from '../../storage/rosterTypes.ts';
 import { anchorsOf } from '../curriculum/curriculumModel.ts';
 import { classMembersOn } from '../roster/rosterModel.ts';
 import { basicCode, planOf } from './basicModel.ts';
@@ -52,8 +52,14 @@ export interface Recipient {
   guest: boolean;
   /** 같은 날 수업 오는 형제가 있음 */
   sibling: boolean;
+  /** 전체브리핑 보낸 기록 */
   sent: BriefingRow | null;
+  /** 개인브리핑 보낸 기록 */
+  personalSent: BriefingRow | null;
 }
+
+/** 기록 종류(예전 기록은 kind 없음 = 전체브리핑) */
+export const kindOf = (b: Pick<BriefingRow, 'kind'>): BriefingKind => b.kind ?? 'class';
 
 /**
  * 아이 목록: 그날 기준 반 명단 − 결석(맨 아래 "결석") + 추가한 아이.
@@ -70,9 +76,11 @@ export function recipients(
   const members = classMembersOn(roster, classId, date);
   const memberIds = new Set(members.map((s) => s.id));
   const absent = new Set(roster.absences.filter((a) => a.date === date && a.classId === classId).map((a) => a.studentId));
-  const sentBy = new Map(roster.briefings.filter((b) => b.date === date && b.classId === classId).map((b) => [b.studentId, b]));
+  const today = roster.briefings.filter((b) => b.date === date && b.classId === classId);
+  const sentBy = new Map(today.filter((b) => kindOf(b) === 'class').map((b) => [b.studentId, b]));
+  const personalBy = new Map(today.filter((b) => kindOf(b) === 'personal').map((b) => [b.studentId, b]));
   const byId = new Map(roster.students.map((s) => [s.id, s]));
-  const guests = [...new Set([...guestIds, ...sentBy.keys()])]
+  const guests = [...new Set([...guestIds, ...today.map((b) => b.studentId)])]
     .filter((id) => !memberIds.has(id))
     .map((id) => byId.get(id))
     .filter((s): s is StudentRow => Boolean(s));
@@ -93,21 +101,22 @@ export function recipients(
     guest,
     sibling: hasSiblingToday(s.id),
     sent: sentBy.get(s.id) ?? null,
+    personalSent: personalBy.get(s.id) ?? null,
   });
   const list = [...members.map((s) => make(s, false)), ...guests.map((s) => make(s, true))];
   return [...list.filter((r) => !r.absent), ...list.filter((r) => r.absent)];
 }
 
 /** 진행 표시: 보낸 수 / 보낼 아이 수(결석 제외) */
-export function progressCount(list: Recipient[]): { sent: number; total: number } {
+export function progressCount(list: Recipient[], kind: BriefingKind = 'class'): { sent: number; total: number } {
   const targets = list.filter((r) => !r.absent);
-  return { sent: targets.filter((r) => r.sent).length, total: targets.length };
+  return { sent: targets.filter((r) => (kind === 'class' ? r.sent : r.personalSent)).length, total: targets.length };
 }
 
 /** 카톡 검색어(비우면 이름) */
 export const kakaoSearchOf = (s: StudentRow) => s.kakaoSearch?.trim() || s.name;
 
-/** 보냄 기록(같은 날·반·아이 기록이 있으면 그 행을 고친다) */
+/** 보냄 기록(같은 날·반·아이·종류 기록이 있으면 그 행을 고친다) */
 export function recordSent(
   roster: Pick<RosterData, 'briefings'>,
   date: string,
@@ -116,9 +125,10 @@ export function recordSent(
   code: string,
   text: string,
   nowIso: string,
+  kind: BriefingKind = 'class',
 ): RosterChange {
-  const existing = roster.briefings.find((b) => b.date === date && b.classId === classId && b.studentId === studentId);
-  const row: BriefingRow = { id: existing?.id ?? newId(), date, classId, studentId, code, textSnapshot: text, sharedAt: nowIso };
+  const existing = roster.briefings.find((b) => b.date === date && b.classId === classId && b.studentId === studentId && kindOf(b) === kind);
+  const row: BriefingRow = { id: existing?.id ?? newId(), date, classId, studentId, kind, code, textSnapshot: text, sharedAt: nowIso };
   return { upsert: { briefings: [row] } };
 }
 

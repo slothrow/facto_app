@@ -100,6 +100,34 @@ describe('보낸 기록', () => {
     expect(recordSent(r, DATE, 'c1', 'a', 'P9-3', '바뀐 문구', '2027-01-05T09:00:00Z').upsert!.briefings![0].id).toBe(first.id);
     expect(cancelSent(first)).toEqual({ remove: { briefings: [first] } });
   });
+  it('전체·개인 기록은 따로: 개인을 보내도 전체 기록은 그대로(27단계 고유키 date·class·student·kind)', () => {
+    const r = base();
+    const whole = recordSent(r, DATE, 'c1', 'a', 'P9-3', '문구', '2027-01-05T08:00:00Z').upsert!.briefings![0];
+    expect(whole.kind).toBe('class');
+    r.briefings = [whole];
+    const mine = recordSent(r, DATE, 'c1', 'a', 'P9-3', '하솜이는 오늘', '2027-01-05T08:10:00Z', 'personal').upsert!.briefings![0];
+    expect(mine.id).not.toBe(whole.id);
+    expect(mine).toMatchObject({ kind: 'personal', textSnapshot: '하솜이는 오늘' });
+    r.briefings = [whole, mine];
+    const list = recipients(r, 'c1', DATE, [], ['c1']);
+    expect(progressCount(list)).toEqual({ sent: 1, total: 2 });
+    expect(progressCount(list, 'personal')).toEqual({ sent: 1, total: 2 });
+    expect(list.find((x) => x.student.id === 'a')).toMatchObject({ sent: { id: whole.id }, personalSent: { id: mine.id } });
+  });
+  it('예전 기록(kind 없음)은 전체브리핑으로 본다', () => {
+    const r = { ...base(), briefings: [{ id: 'old', date: DATE, classId: 'c1', studentId: 'a', code: 'P9-3', textSnapshot: 't', sharedAt: '2027-01-05T08:00:00Z' }] };
+    const a = recipients(r, 'c1', DATE, [], ['c1']).find((x) => x.student.id === 'a');
+    expect(a).toMatchObject({ sent: { id: 'old' }, personalSent: null });
+  });
+  it('개인브리핑 명단(SPEC_personal 8장): 결석 아이는 보낼 대상에서 빠지고, [+ 아이 추가] 아이는 들어간다', () => {
+    const r = base();
+    const list = recipients(r, 'c1', DATE, ['d'], ['c1', 'c2']);
+    const targets = list.filter((x) => !x.absent).map((x) => x.student.id);
+    expect(targets).toEqual(['a', 'c', 'd']);
+    // 다른 반 아이가 이 반으로 개인브리핑만 받았어도 다음에 열면 남아 있다
+    r.briefings = [{ id: 'p', date: DATE, classId: 'c1', studentId: 'd', kind: 'personal', code: 'P9-3', textSnapshot: 't', sharedAt: '2027-01-05T08:00:00Z' }];
+    expect(recipients(r, 'c1', DATE, [], ['c1']).find((x) => x.student.id === 'd')).toMatchObject({ guest: true, sent: null, personalSent: { id: 'p' } });
+  });
   it('카톡 검색어: 비우면 이름', () => {
     expect(kakaoSearchOf({ ...s('a', '홍길동'), kakaoSearch: '  ' })).toBe('홍길동');
     expect(kakaoSearchOf({ ...s('a', '홍길동'), kakaoSearch: '길동맘' })).toBe('길동맘');
