@@ -6,6 +6,7 @@ const ROUTES: [string, string[], string][] = [
   ['home', [], '할 일'],
   ['briefing', [], '수업 후 브리핑'],
   ['briefing', ['texts'], '문구 관리'],
+  ['briefing', ['2026-11-10', 'c', 'personal'], '수업 후 브리핑'],
   ['roster', [], '시간표'],
   ['roster', ['classes', 'list'], '시간표'],
   ['roster', ['class', 'x'], '반 상세'],

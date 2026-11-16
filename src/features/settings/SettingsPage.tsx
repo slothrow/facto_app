@@ -23,6 +23,7 @@ import { useRoster } from '../../app/RosterContext.tsx';
 import { STORAGE_KEY } from '../../storage/localStorageRepository.ts';
 import type { AppData, ClosureRow, TrackAnchorRow } from '../../storage/types.ts';
 import { useAuth } from '../auth/AuthGate.tsx';
+import { CallNamesSection } from '../briefing/CallNamesSection.tsx';
 import { CurriculumSettingsSection } from '../curriculum/CurriculumSettingsSection.tsx';
 import { HoursSection } from './HoursSection.tsx';
 import { TaskRulesSection } from './TaskRulesSection.tsx';
@@ -30,7 +31,7 @@ import { TemplatesSection } from './TemplatesSection.tsx';
 import { remindersOn } from '../todos/todoModel.ts';
 
 /** 예전 백업에 없으면 지금 데이터를 남기는 항목 */
-const KEEP_IF_MISSING = ['briefingTexts', 'tasks', 'taskStates', 'taskTemplates', 'todos'] as const;
+const KEEP_IF_MISSING = ['briefingTexts', 'personalBriefingTexts', 'tasks', 'taskStates', 'taskTemplates', 'todos'] as const;
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 const withDay = (date: string) => `${date.slice(0, 4)}.${md(date)} (${WEEKDAY_NAMES[weekdayOf(date)]})`;
@@ -50,6 +51,7 @@ export function SettingsPage() {
       <NoticeSection />
       <ThresholdSection />
       <CurriculumSettingsSection />
+      <CallNamesSection />
       {/* 예전 할 일 알림은 보관 중(26단계). settings.features.reminders = true일 때만 보인다 */}
       <RemindersSettings />
       <DataSection />

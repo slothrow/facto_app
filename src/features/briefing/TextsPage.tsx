@@ -1,13 +1,14 @@
-// 문구 관리(SPEC_briefing 4장). 주소: #/briefing/texts/<단계>
+// 문구 관리(SPEC_briefing 4장, SPEC_personal_briefing 4장). 주소: #/briefing/texts/<단계>(/personal)
+// 상단 전환 [전체 문구] [개인 문구]. 개인 문구는 {이름} 자리를 넣어 쓴다.
 // 단계별 탭 → 단원 12 × 주차 4 격자(채워진/빈 칸), 단계별 진행률. 칸을 누르면 보기·수정.
 // 베이직 탭: 베이직 반의 앞으로 수업 날짜 목록 → 날짜마다 제목·문구(SPEC 2.1).
 // [일괄 가져오기]: 코드, 문구 붙여넣기.
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
 import { navigate } from '../../app/router.ts';
 import { todayStr, useRoster } from '../../app/RosterContext.tsx';
 import { ChevronLeft } from '../../components/icons.tsx';
-import { BottomSheet, Button, Card, Field, inputClass } from '../../components/ui.tsx';
+import { BottomSheet, Button, Card, ConfirmDialog, Field, inputClass } from '../../components/ui.tsx';
 import { formatTimeKo } from '../../engine/classTime.ts';
 import { STAGES, STAGE_NAMES, UNIT_STAGES, type StageId } from '../../engine/curriculum.ts';
 import { addDays, weekdayOf } from '../../engine/dates.ts';
@@ -16,17 +17,22 @@ import type { BasicLessonRow, ClassRow } from '../../storage/rosterTypes.ts';
 import { courseMonthLabel, curriculumOf } from '../curriculum/curriculumModel.ts';
 import { WEEKDAY_NAMES, classGradeLabel } from '../roster/rosterModel.ts';
 import { basicSessions, planFilled, savePlanChange } from './basicModel.ts';
-import { buildTextImport, saveTextChange, stageFilledCount, stageGrid, textImportChange, textMap } from './textsModel.ts';
+import { NAME_SLOT, hasNameSlot, renderPersonalParts } from '../../engine/personalBriefing.ts';
+import { buildTextImport, saveTextChange, stageFilledCount, stageGrid, textImportChange, textMap, type TextStore } from './textsModel.ts';
+
+export const STORE_LABEL: Record<TextStore, string> = { briefingTexts: '전체 문구', personalBriefingTexts: '개인 문구' };
+const textsPath = (stage: StageId, store: TextStore) => `/briefing/texts/${stage}${store === 'personalBriefingTexts' ? '/personal' : ''}`;
 
 const isStage = (s?: string): s is StageId => !!s && (STAGES as string[]).includes(s);
 export const dateLabel = (d: string) => `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}(${WEEKDAY_NAMES[weekdayOf(d)]})`;
 
-export function TextsPage({ stage: stageParam }: { stage?: string }) {
+export function TextsPage({ stage: stageParam, target }: { stage?: string; target?: string }) {
   const { data } = useAppData();
   const { roster } = useRoster();
   const settings = curriculumOf(data);
   const stage: StageId = isStage(stageParam) ? stageParam : 'P';
-  const texts = useMemo(() => textMap(roster), [roster]);
+  const store: TextStore = target === 'personal' ? 'personalBriefingTexts' : 'briefingTexts';
+  const texts = useMemo(() => textMap(roster, store), [roster, store]);
   const [importing, setImporting] = useState(false);
 
   return (
@@ -39,6 +45,24 @@ export function TextsPage({ stage: stageParam }: { stage?: string }) {
         <Button onClick={() => setImporting(true)}>일괄 가져오기</Button>
       </div>
 
+      <div role="tablist" className="grid grid-cols-2 gap-1 rounded-2xl bg-stone-200/70 p-1 md:max-w-md">
+        {(['briefingTexts', 'personalBriefingTexts'] as TextStore[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={store === k}
+            onClick={() => navigate(textsPath(stage, k))}
+            className={`h-12 rounded-xl text-base font-bold ${store === k ? 'bg-white text-emerald-800 shadow-sm' : 'text-stone-600'}`}
+          >
+            {STORE_LABEL[k]}
+          </button>
+        ))}
+      </div>
+      {store === 'personalBriefingTexts' && (
+        <p className="text-sm text-stone-600">개인 문구는 아이 이름이 들어갈 자리에 <b>{NAME_SLOT}</b>를 넣어 써요. 보낼 때 아이마다 부르는 이름으로 바뀌어요.</p>
+      )}
+
       <div role="tablist" className="grid grid-cols-6 gap-1 rounded-2xl bg-stone-200/70 p-1 md:max-w-2xl">
         {STAGES.map((s) => {
           const filled = s === 'basic' ? null : stageFilledCount(stageGrid(s, settings, texts));
@@ -48,7 +72,7 @@ export function TextsPage({ stage: stageParam }: { stage?: string }) {
               type="button"
               role="tab"
               aria-selected={stage === s}
-              onClick={() => navigate(`/briefing/texts/${s}`)}
+              onClick={() => navigate(textsPath(s, store))}
               className={`flex h-14 flex-col items-center justify-center rounded-xl leading-tight ${stage === s ? 'bg-white text-emerald-800 shadow-sm' : 'text-stone-600'}`}
             >
               <span className={`font-bold ${s === 'basic' ? 'text-sm' : 'text-base'}`}>{s === 'basic' ? STAGE_NAMES.basic : settings[s].prefix}</span>
@@ -58,23 +82,33 @@ export function TextsPage({ stage: stageParam }: { stage?: string }) {
         })}
       </div>
 
-      {stage === 'basic' ? <BasicPlans /> : <StageGrid stage={stage} />}
+      {stage === 'basic' ? (
+        store === 'briefingTexts' ? (
+          <BasicPlans />
+        ) : (
+          <Card title="베이직 개인 문구">
+            <p className="text-base text-stone-600">베이직은 날짜마다 수업 내용이 달라서 격자가 없어요. 브리핑 탭 → 개인브리핑에서 그날 문구를 바로 적으면, 같은 제목의 베이직 수업에 다시 쓰여요.</p>
+          </Card>
+        )
+      ) : (
+        <StageGrid stage={stage} store={store} />
+      )}
 
-      {importing && <ImportSheet onClose={() => setImporting(false)} />}
+      {importing && <ImportSheet initialStore={store} onClose={() => setImporting(false)} />}
     </div>
   );
 }
 
-function StageGrid({ stage }: { stage: StageId }) {
+function StageGrid({ stage, store }: { stage: StageId; store: TextStore }) {
   const { data } = useAppData();
   const { roster } = useRoster();
   const settings = curriculumOf(data);
-  const texts = useMemo(() => textMap(roster), [roster]);
+  const texts = useMemo(() => textMap(roster, store), [roster, store]);
   const grid = stageGrid(stage, settings, texts);
   const [open, setOpen] = useState<string | null>(null);
 
   return (
-    <Card title={`${settings[stage].prefix} 단계 · ${stageFilledCount(grid)}/48`}>
+    <Card title={`${STORE_LABEL[store]} · ${settings[stage].prefix} 단계 · ${stageFilledCount(grid)}/48`}>
       <div className="grid grid-cols-[2.5rem_repeat(4,minmax(0,1fr))] gap-1 text-center md:max-w-xl">
         <span />
         {[1, 2, 3, 4].map((w) => (
@@ -101,36 +135,91 @@ function StageGrid({ stage }: { stage: StageId }) {
         ])}
       </div>
       <p className="mt-2 text-sm text-stone-500">초록 칸 = 문구 있음. 칸을 누르면 보고 고칠 수 있어요.</p>
-      {open && <TextSheet code={open} onClose={() => setOpen(null)} />}
+      {open && <TextSheet code={open} store={store} onClose={() => setOpen(null)} />}
     </Card>
   );
 }
 
-/** 코드 문구 보기·수정(브리핑 화면에서도 쓴다) */
-export function TextSheet({ code, onClose, onSaved }: { code: string; onClose: () => void; onSaved?: (text: string) => void }) {
+/** 코드 문구 보기·수정(브리핑 화면에서도 쓴다). 개인 문구는 [이름 넣기]로 {이름} 자리를 넣는다 */
+export function TextSheet({
+  code,
+  store = 'briefingTexts',
+  onClose,
+  onSaved,
+}: {
+  code: string;
+  store?: TextStore;
+  onClose: () => void;
+  onSaved?: (text: string) => void;
+}) {
   const { roster, mutate } = useRoster();
-  const current = roster.briefingTexts.find((t) => t.code === code)?.text ?? '';
+  const personal = store === 'personalBriefingTexts';
+  const current = roster[store].find((t) => t.code === code)?.text ?? '';
   const [text, setText] = useState(current);
-  const save = async () => {
-    if (await mutate(saveTextChange(code, text), text.trim() ? `${code} 문구를 저장했어요` : `${code} 문구를 지웠어요`)) {
+  const [askNoName, setAskNoName] = useState(false);
+  const area = useRef<HTMLTextAreaElement>(null);
+  const label = `${code} ${STORE_LABEL[store]}`;
+  const doSave = async () => {
+    if (await mutate(saveTextChange(code, text, store), text.trim() ? `${label}를 저장했어요` : `${label}를 지웠어요`)) {
       onSaved?.(text);
       onClose();
     }
   };
+  const save = () => (personal && text.trim() && !hasNameSlot(text) ? setAskNoName(true) : void doSave());
+  const insertName = () => {
+    const el = area.current;
+    const at = el ? el.selectionStart : text.length;
+    const to = el ? el.selectionEnd : text.length;
+    setText(text.slice(0, at) + NAME_SLOT + text.slice(to));
+    // 커서를 넣은 자리 뒤로
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(at + NAME_SLOT.length, at + NAME_SLOT.length);
+    });
+  };
   return (
-    <BottomSheet title={`${code} 문구`} onClose={onClose}>
+    <BottomSheet title={label} onClose={onClose}>
       <div className="space-y-3">
+        {personal && (
+          // 누를 때 글상자 포커스(커서 위치)를 잃지 않게
+          <div onMouseDown={(e) => e.preventDefault()}>
+            <Button className="w-full" onClick={insertName}>
+              이름 넣기 ({NAME_SLOT})
+            </Button>
+          </div>
+        )}
         <textarea
+          ref={area}
           className={`${inputClass} min-h-64 py-2 leading-relaxed`}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="학부모님께 보낼 브리핑 문구(아이 이름은 넣지 않아요)"
+          placeholder={personal ? '예: {이름}는 오늘 도형을 돌려 보며 …' : '학부모님께 보낼 전체브리핑 문구(아이 이름은 넣지 않아요)'}
         />
-        <p className="text-sm text-stone-500">이 코드를 쓰는 모든 반에 같은 문구가 쓰여요. 비우고 저장하면 지워져요.</p>
-        <Button variant="primary" className="w-full" disabled={text === current} onClick={() => void save()}>
+        {personal && hasNameSlot(text) && (
+          <p className="whitespace-pre-wrap rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-700">
+            <span className="text-stone-500">미리보기(하솜이): </span>
+            {renderPersonalParts(text, '하솜이').map((p, i) => (p.isName ? <b key={i} className="text-emerald-800">{p.text}</b> : <span key={i}>{p.text}</span>))}
+          </p>
+        )}
+        <p className="text-sm text-stone-500">
+          {personal ? '이 코드를 쓰는 모든 반 아이에게 이름만 바꿔 쓰여요.' : '이 코드를 쓰는 모든 반에 같은 문구가 쓰여요.'} 비우고 저장하면 지워져요.
+        </p>
+        <Button variant="primary" className="w-full" disabled={text === current} onClick={save}>
           저장
         </Button>
       </div>
+      {askNoName && (
+        <ConfirmDialog
+          title="이름 자리가 없습니다. 그대로 저장할까요?"
+          body={`[이름 넣기]로 ${NAME_SLOT} 자리를 넣으면 아이마다 부르는 이름이 들어가요.`}
+          confirmLabel="그대로 저장"
+          onCancel={() => setAskNoName(false)}
+          onConfirm={() => {
+            setAskNoName(false);
+            void doSave();
+          }}
+        />
+      )}
     </BottomSheet>
   );
 }
@@ -146,7 +235,7 @@ function BasicPlans() {
 
   return (
     <Card title="베이직 날짜별 수업 내용">
-      <p className="mb-2 text-sm text-stone-600">베이직은 그때그때 수업 내용이 달라요. 2주쯤 전에 날짜마다 제목과 브리핑 문구를 적어 두면 브리핑 화면에 바로 떠요.</p>
+      <p className="mb-2 text-sm text-stone-600">베이직은 그때그때 수업 내용이 달라요. 2주쯤 전에 날짜마다 제목과 전체브리핑 문구를 적어 두면 브리핑 화면에 바로 떠요.</p>
       {list.length === 0 ? (
         <p className="text-base text-stone-500">앞으로 6주 안에 베이직 진도인 반이 없어요. 반 상세 → 진도에서 기준점을 "베이직"으로 넣어 주세요.</p>
       ) : (
@@ -198,7 +287,7 @@ export function PlanSheet({ cls, date, plan, onClose }: { cls: ClassRow; date: s
         <Field label="수업 제목">
           <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="예: 동물 친구 모양 맞추기" />
         </Field>
-        <Field label="브리핑 문구">
+        <Field label="전체브리핑 문구">
           <textarea className={`${inputClass} min-h-56 py-2 leading-relaxed`} value={text} onChange={(e) => setText(e.target.value)} />
         </Field>
         <Button variant="primary" className="w-full" onClick={() => void save()}>
@@ -209,27 +298,39 @@ export function PlanSheet({ cls, date, plan, onClose }: { cls: ClassRow; date: s
   );
 }
 
-function ImportSheet({ onClose }: { onClose: () => void }) {
+function ImportSheet({ initialStore, onClose }: { initialStore: TextStore; onClose: () => void }) {
   const { data } = useAppData();
   const { roster, mutate } = useRoster();
   const settings = curriculumOf(data);
   const [input, setInput] = useState('');
+  const [store, setStore] = useState<TextStore>(initialStore);
   const [mode, setMode] = useState<'overwrite' | 'skip'>('skip');
-  const rows = useMemo(() => buildTextImport(input, roster, settings), [input, roster, settings]);
+  const rows = useMemo(() => buildTextImport(input, roster, settings, store), [input, roster, settings, store]);
   const valid = rows.filter((r) => !r.error);
   const existing = valid.filter((r) => r.exists).length;
   const toSave = mode === 'overwrite' ? valid.length : valid.length - existing;
   const bad = rows.filter((r) => r.error);
 
   const save = async () => {
-    if (await mutate(textImportChange(rows, mode), `문구 ${toSave}개를 저장했어요`)) onClose();
+    if (await mutate(textImportChange(rows, mode, store), `${STORE_LABEL[store]} ${toSave}개를 저장했어요`)) onClose();
   };
 
   return (
-    <BottomSheet title="문구 일괄 가져오기" onClose={onClose}>
+    <BottomSheet title={`${STORE_LABEL[store]} 일괄 가져오기`} onClose={onClose}>
       <div className="space-y-3">
+        <div>
+          <p className="mb-1 text-base font-semibold">가져올 곳</p>
+          <div className="grid grid-cols-2 gap-2">
+            {(['briefingTexts', 'personalBriefingTexts'] as TextStore[]).map((k) => (
+              <Button key={k} variant={store === k ? 'primary' : 'secondary'} aria-pressed={store === k} onClick={() => setStore(k)}>
+                {STORE_LABEL[k]}
+              </Button>
+            ))}
+          </div>
+        </div>
         <p className="text-base text-stone-700">
           엑셀에서 <b>코드 | 문구</b> 두 열을 복사해 붙여넣으세요. 문구 안의 줄바꿈은 그대로 저장돼요. 단계 코드: {UNIT_STAGES.map((s) => settings[s].prefix).join(', ')}
+          {store === 'personalBriefingTexts' && <> · 문구 안의 {NAME_SLOT}는 그대로 저장돼요</>}
         </p>
         <textarea
           className={`${inputClass} min-h-40 py-2 text-sm`}

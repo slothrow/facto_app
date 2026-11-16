@@ -128,7 +128,7 @@ export function TodayClasses({
                   briefed ? 'border-emerald-300 bg-emerald-50 text-emerald-900' : 'border-stone-300 bg-white active:bg-stone-100'
                 }`}
               >
-                브리핑 {briefed ? '✓' : `${p.sent}/${p.total}`}
+                전체브리핑 {briefed ? '✓' : `${p.sent}/${p.total}`}
               </button>
             </li>
           );

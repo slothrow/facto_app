@@ -40,7 +40,7 @@ export function CurriculumSettingsSection() {
           <Row key={s} stage={s} value={draft[s]} onChange={(patch) => set(s, patch)} />
         ))}
       </div>
-      <p className="mt-2 text-sm text-stone-500">베이직은 단원 없이 날짜별로 수업 내용을 적어요(브리핑 → 문구 관리 → 베이직).</p>
+      <p className="mt-2 text-sm text-stone-500">베이직은 단원 없이 날짜별로 수업 내용을 적어요(브리핑 탭 → 문구 관리 → 전체 문구 → 베이직).</p>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       <Button variant="primary" className="mt-3 w-full" disabled={!dirty || !!error} onClick={save}>
         저장

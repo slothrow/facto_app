@@ -7,6 +7,7 @@ import type { Weekday } from '../../../engine/types.ts';
 import type { Availability, Guardian, GuardianRelation, SiblingRow, StudentRow } from '../../../storage/rosterTypes.ts';
 import { CLASS_WEEKDAYS, WEEKDAY_NAMES } from '../rosterModel.ts';
 import { RELATION_LABEL, digitsOnly, formatPhone, matchesName, siblingPair, siblingsOf } from './studentModel.ts';
+import { defaultCallName } from '../../../engine/personalBriefing.ts';
 
 interface PickedContact {
   name?: string[];
@@ -141,6 +142,9 @@ export function StudentForm({ student, onClose }: { student: StudentRow; onClose
           )}
           <Field label="다니는 학교·유치원">
             <input className={inputClass} value={s.school ?? ''} onChange={(e) => set('school', txt(e.target.value))} />
+          </Field>
+          <Field label="부르는 이름" hint="개인브리핑 문구의 {이름} 자리에 들어가요. 비우면 회색 자동값을 써요.">
+            <input className={inputClass} value={s.callName ?? ''} placeholder={defaultCallName(s.name) || '자동'} onChange={(e) => set('callName', txt(e.target.value))} />
           </Field>
           <Field label="카톡 검색어" hint="카톡 대화방을 찾을 때 쓰는 말(예: 홍길동 7세). 비우면 이름으로 찾아요.">
             <input className={inputClass} value={s.kakaoSearch ?? ''} placeholder={s.name || '이름'} onChange={(e) => set('kakaoSearch', txt(e.target.value))} />

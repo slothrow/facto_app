@@ -10,7 +10,11 @@ import type { WeekNo } from '../../engine/types.ts';
 import type { BriefingTextRow, RosterChange, RosterData } from '../../storage/rosterTypes.ts';
 import { parseTable } from '../roster/students/importModel.ts';
 
-export const textMap = (roster: Pick<RosterData, 'briefingTexts'>) => new Map(roster.briefingTexts.map((t) => [t.code, t.text]));
+/** 문구 저장소: 전체 문구(briefingTexts) / 개인 문구(personalBriefingTexts, {이름} 자리 포함) */
+export type TextStore = 'briefingTexts' | 'personalBriefingTexts';
+
+export const textMap = (roster: Partial<Pick<RosterData, TextStore>>, store: TextStore = 'briefingTexts') =>
+  new Map((roster[store] ?? []).map((t) => [t.code, t.text]));
 
 export interface GridCell {
   code: string;
@@ -32,9 +36,9 @@ export function stageGrid(stage: StageId, settings: CurriculumSettings, texts: M
 export const stageFilledCount = (grid: GridCell[][]) => grid.flat().filter((c) => c.filled).length;
 
 /** 문구 저장(빈 문구면 지운다) */
-export function saveTextChange(code: string, text: string): RosterChange {
+export function saveTextChange(code: string, text: string, store: TextStore = 'briefingTexts'): RosterChange {
   const row: BriefingTextRow = { code, text };
-  return text.trim() ? { upsert: { briefingTexts: [{ code, text: text.replace(/\r\n?/g, '\n').trimEnd() }] } } : { remove: { briefingTexts: [row] } };
+  return text.trim() ? { upsert: { [store]: [{ code, text: text.replace(/\r\n?/g, '\n').trimEnd() }] } } : { remove: { [store]: [row] } };
 }
 
 // ---------------------------------------------------------------
@@ -55,13 +59,14 @@ const HEADER_CODE = ['코드', '수업코드', 'code'];
 
 export function buildTextImport(
   input: string,
-  roster: Pick<RosterData, 'briefingTexts'>,
+  roster: Partial<Pick<RosterData, TextStore>>,
   settings: CurriculumSettings,
+  store: TextStore = 'briefingTexts',
 ): TextImportRow[] {
   const table = parseTable(input);
   if (table.length === 0) return [];
   const hasHeader = HEADER_CODE.includes((table[0][0] ?? '').replace(/﻿/g, '').replace(/\s/g, '').toLowerCase());
-  const existing = textMap(roster);
+  const existing = textMap(roster, store);
   const seen = new Set<string>();
   return (hasHeader ? table.slice(1) : table).map((r, i) => {
     const raw = r[0] ?? '';
@@ -77,7 +82,7 @@ export function buildTextImport(
   });
 }
 
-export function textImportChange(rows: TextImportRow[], mode: 'overwrite' | 'skip'): RosterChange {
+export function textImportChange(rows: TextImportRow[], mode: 'overwrite' | 'skip', store: TextStore = 'briefingTexts'): RosterChange {
   const rowsToSave = rows.filter((r) => !r.error && r.code && (mode === 'overwrite' || !r.exists));
-  return { upsert: { briefingTexts: rowsToSave.map((r) => ({ code: r.code!, text: r.text })) } };
+  return { upsert: { [store]: rowsToSave.map((r) => ({ code: r.code!, text: r.text })) } };
 }
