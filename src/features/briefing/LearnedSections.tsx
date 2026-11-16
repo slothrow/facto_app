@@ -5,10 +5,10 @@ import { navigate } from '../../app/router.ts';
 import { todayStr, useRoster } from '../../app/RosterContext.tsx';
 import { scheduleFor } from '../../app/scheduleInput.ts';
 import { CheckIcon } from '../../components/icons.tsx';
-import { Button, Card } from '../../components/ui.tsx';
+import { BottomSheet, Button, Card } from '../../components/ui.tsx';
 import { shortTime } from '../../engine/classTime.ts';
 import { addDays, addMonthsYm, monthStart } from '../../engine/dates.ts';
-import type { ClassRow } from '../../storage/rosterTypes.ts';
+import type { BriefingRow, ClassRow } from '../../storage/rosterTypes.ts';
 import { courseMonthLabel, curriculumOf, currentSessionByWeekday } from '../curriculum/curriculumModel.ts';
 import { dateLabel } from './TextsPage.tsx';
 import { classMonthStatus, learnedHistory } from './learnedModel.ts';
@@ -20,6 +20,7 @@ export function LearnedSection({ studentId }: { studentId: string }) {
   const { roster } = useRoster();
   const today = todayStr();
   const [shown, setShown] = useState(PAGE);
+  const [viewing, setViewing] = useState<BriefingRow | null>(null);
   // 첫 배정부터(최대 1년 전) 오늘까지
   const from = useMemo(() => {
     const starts = roster.enrollments.filter((e) => e.studentId === studentId).map((e) => e.startDate).sort();
@@ -51,12 +52,25 @@ export function LearnedSection({ studentId }: { studentId: string }) {
                   </span>
                   {i.kind === 'absent' ? (
                     <span className="shrink-0 text-sm">결석(미이수)</span>
-                  ) : i.sent ? (
-                    <span className="flex shrink-0 items-center gap-0.5 text-sm font-semibold text-emerald-700">
-                      <CheckIcon className="h-4 w-4" /> 보냄
-                    </span>
                   ) : (
-                    <span className="shrink-0 text-sm text-stone-400">안 보냄</span>
+                    <span className="flex shrink-0 items-center gap-1 text-sm">
+                      <span className={`flex items-center gap-0.5 ${i.sent ? 'font-semibold text-emerald-700' : 'text-stone-400'}`}>
+                        전체 {i.sent ? <CheckIcon className="h-4 w-4" /> : '–'}
+                      </span>
+                      <span className="text-stone-300">·</span>
+                      {i.personalSent ? (
+                        <button
+                          type="button"
+                          onClick={() => setViewing(i.personalSent)}
+                          className="flex min-h-11 items-center gap-0.5 rounded-lg px-1 font-semibold text-emerald-700 underline decoration-dotted active:bg-emerald-50"
+                          aria-label="보낸 개인브리핑 문장 보기"
+                        >
+                          개인 <CheckIcon className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <span className="text-stone-400">개인 –</span>
+                      )}
+                    </span>
                   )}
                 </li>
               );
@@ -68,6 +82,12 @@ export function LearnedSection({ studentId }: { studentId: string }) {
             </Button>
           )}
         </>
+      )}
+      {viewing && (
+        <BottomSheet title={`${dateLabel(viewing.date)} 개인브리핑 · ${viewing.code}`} onClose={() => setViewing(null)}>
+          <p className="whitespace-pre-wrap rounded-xl bg-stone-50 p-3 text-base leading-relaxed">{viewing.textSnapshot}</p>
+          <p className="mt-2 text-sm text-stone-500">실제로 보낸 문장 그대로예요.</p>
+        </BottomSheet>
       )}
     </Card>
   );
@@ -94,6 +114,8 @@ export function ClassBriefingStatus({ cls }: { cls: ClassRow }) {
         <ul className="divide-y divide-stone-100">
           {status.days.map((d) => {
             const all = d.total > 0 && d.sent === d.total;
+            const allP = d.total > 0 && d.personalSent === d.total;
+            const tone = (done: boolean, n: number) => (done ? 'text-emerald-700' : n ? 'text-amber-700' : 'text-stone-400');
             return (
               <li key={d.date}>
                 <button
@@ -103,8 +125,10 @@ export function ClassBriefingStatus({ cls }: { cls: ClassRow }) {
                 >
                   <span className="w-20 shrink-0">{dateLabel(d.date)}</span>
                   <span className="min-w-0 flex-1 truncate font-semibold">{d.label}</span>
-                  <span className={`shrink-0 font-semibold ${all ? 'text-emerald-700' : d.sent ? 'text-amber-700' : 'text-stone-400'}`}>
-                    {d.sent}/{d.total} 보냄
+                  <span className="shrink-0 text-sm font-semibold">
+                    <span className={tone(all, d.sent)}>전체 {d.sent}/{d.total}</span>
+                    <span className="text-stone-300"> · </span>
+                    <span className={tone(allP, d.personalSent)}>개인 {d.personalSent}/{d.total}</span>
                   </span>
                 </button>
               </li>

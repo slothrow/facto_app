@@ -75,3 +75,18 @@ describe('반 브리핑 현황(이번 수업월 날짜별 n/m 보냄)', () => {
     ]);
   });
 });
+
+describe('개인브리핑 기록(SPEC_personal_briefing 6장)', () => {
+  it('배운 내용: 전체 ✓ · 개인 ✓를 따로, 반 현황: 전체 n/m · 개인 n/m', () => {
+    const r = movedRoster();
+    r.briefings = [
+      { id: 'w', date: '2027-01-05', classId: 'tue', studentId: 'a', kind: 'class', code: 'P9-3', textSnapshot: 't', sharedAt: '2027-01-05T08:00:00Z' },
+      { id: 'p', date: '2027-01-05', classId: 'tue', studentId: 'a', kind: 'personal', code: 'P9-3', textSnapshot: '가는 오늘', sharedAt: '2027-01-05T08:05:00Z' },
+      { id: 'q', date: '2027-01-05', classId: 'tue', studentId: 'b', kind: 'personal', code: 'P9-3', textSnapshot: '나는 오늘', sharedAt: '2027-01-05T08:06:00Z' },
+    ];
+    const item = learnedHistory(r, 'a', cells, DEFAULT_CURRICULUM, '2027-01-22').find((i) => i.date === '2027-01-05');
+    expect(item).toMatchObject({ sent: { id: 'w' }, personalSent: { id: 'p', textSnapshot: '가는 오늘' } });
+    const day = classMonthStatus(r, r.classes[0], '2027-01', cells, DEFAULT_CURRICULUM, '2027-01-12').find((d) => d.date === '2027-01-05');
+    expect(day).toMatchObject({ sent: 1, personalSent: 2, total: 2 });
+  });
+});
