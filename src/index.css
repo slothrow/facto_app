@@ -26,7 +26,16 @@
   src: url('./assets/fonts/Pretendard-ExtraBold.woff2') format('woff2');
 }
 
+/* Jua (SIL Open Font License, src/assets/fonts/LICENSE-Jua.txt) — 하린이 시간표 화면 전용 */
+@font-face {
+  font-family: 'Jua';
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/Jua-Regular.woff2') format('woff2');
+}
+
 @theme {
+  --font-jua: 'Jua', 'Pretendard', system-ui, sans-serif;
   --font-sans: 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 }
 

@@ -47,6 +47,16 @@ function Shell() {
   const tab = TABS.find((t) => t.id === tabId) ?? TABS[0];
   const help = helpFor(tab.id, tab.id === tabId ? params : []);
 
+  // 하린이 시간표: 공부방 앱과 다른 화면(하단 탭 없음)
+  if (tab.fullScreen) {
+    return (
+      <>
+        <div key={`${tab.id}-${revision}`}>{tab.render(params)}</div>
+        {toast && <Toast text={toast} bottom="bottom-[calc(1.5rem+env(safe-area-inset-bottom))]" />}
+      </>
+    );
+  }
+
   return (
     <div className="min-h-dvh bg-stone-50">
       {/* 폰: 480px 한 줄 / PC·태블릿(md 이상): 넓게 펼치고 화면마다 2단 배치 */}
@@ -55,13 +65,7 @@ function Shell() {
         {help && <HelpFooter key={`help-${tab.id}-${params[0] ?? ''}`} help={help} />}
       </main>
 
-      {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4">
-          <div role="status" className="rounded-full bg-stone-900/90 px-4 py-2 text-base text-white shadow-lg">
-            {toast}
-          </div>
-        </div>
-      )}
+      {toast && <Toast text={toast} bottom="bottom-[calc(5.5rem+env(safe-area-inset-bottom))]" />}
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)]">
         <ul className="mx-auto flex max-w-[480px] md:max-w-2xl">
@@ -86,6 +90,16 @@ function Shell() {
           })}
         </ul>
       </nav>
+    </div>
+  );
+}
+
+function Toast({ text, bottom }: { text: string; bottom: string }) {
+  return (
+    <div className={`pointer-events-none fixed inset-x-0 ${bottom} z-50 flex justify-center px-4`}>
+      <div role="status" className="rounded-full bg-stone-900/90 px-4 py-2 font-sans text-base text-white shadow-lg">
+        {text}
+      </div>
     </div>
   );
 }

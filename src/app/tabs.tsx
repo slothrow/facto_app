@@ -13,6 +13,7 @@ import { MakeupPage } from '../features/makeup/MakeupPage.tsx';
 import { PlanPage } from '../features/plan/PlanPage.tsx';
 import { RosterPage } from '../features/roster/RosterPage.tsx';
 import { SettingsPage } from '../features/settings/SettingsPage.tsx';
+import { HarinPage } from '../features/harin/HarinPage.tsx';
 
 export interface TabDef {
   /** 주소의 첫 부분. 예: #/plan */
@@ -23,6 +24,8 @@ export interface TabDef {
   render: (params: string[]) => ReactNode;
   /** 하단 탭에 안 보이는 화면. 이 탭이 선택된 것처럼 표시한다 */
   hiddenUnder?: string;
+  /** 하단 탭·도움말 없이 화면 전체를 쓴다(하린이 시간표) */
+  fullScreen?: boolean;
 }
 
 // SPEC_home 1.1·6장: 할 일(주소는 예전 그대로 #/home) / 브리핑 / 시간표 / 달력 / 설정. 숨은 화면은 hiddenUnder 탭이 켜진 것으로 표시
@@ -38,5 +41,6 @@ export const TABS: TabDef[] = [
       </Suspense>
     ) },
   { id: 'attend', label: '출석', icon: CalendarIcon, hiddenUnder: 'plan', render: (params) => <AttendancePage params={params} /> },
+  { id: 'harin', label: '하린', icon: CalendarIcon, hiddenUnder: 'home', fullScreen: true, render: () => <HarinPage /> },
   { id: 'makeup', label: '토요보강', icon: CalendarIcon, hiddenUnder: 'plan', render: ([month]) => <MakeupPage month={month} /> },
 ];
