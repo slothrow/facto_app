@@ -76,9 +76,10 @@ export function buildTravelBlocks(blocks: KidBlockRow[], activities: ActivityLik
       const prev = i > 0 ? day[i - 1] : null;
       const before = travelOf(b, act, 'before');
       if (prev && isOut(prev) && isOut(b)) {
-        const prevAfter = travelOf(prev, actById.get(prev.activityId!), 'after');
+        // 연속인지는 학원 기본 이동 시간으로 판단한다(override는 길이만 바꾼다. "이번만 이동 없음"이 사이 이동을 없애게)
+        const prevBase = actById.get(prev.activityId!)?.travelMinutes ?? 0;
         const gap = toMinutes(b.startTime) - toMinutes(prev.endTime);
-        if (gap < prevAfter + before) {
+        if (gap < prevBase + (act?.travelMinutes ?? 0)) {
           mergedAfter.add(prev.id);
           if (before > 0) {
             const s = toMinutes(prev.endTime);

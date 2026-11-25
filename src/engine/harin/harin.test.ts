@@ -104,6 +104,14 @@ describe('buildTravelBlocks', () => {
     expect(t.map(span)).toEqual(['15:50~16:20']);
   });
 
+  it('연속 학원 사이 이동을 "이번만 이동 없음"(B 앞 0)으로 하면 사이 이동이 없어진다', () => {
+    const t = buildTravelBlocks(
+      [blk(2, '15:00', '15:50', { activityId: 'A' }), blk(2, '16:20', '17:10', { activityId: 'B', travelBeforeOverride: 0 })],
+      [act('A'), act('B')],
+    );
+    expect(t.map(span)).toEqual(['14:40~15:00', '17:10~17:30']);
+  });
+
   it('첫 학원 13:40 시작 → 13:20~13:40 이동 + 입력 범위 밖 경고', () => {
     const t = buildTravelBlocks([blk(5, '13:40', '14:30', { activityId: 'A' })], [act('A')]);
     expect(span(t[0])).toBe('13:20~13:40');
