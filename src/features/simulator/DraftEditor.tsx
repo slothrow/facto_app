@@ -44,6 +44,7 @@ import {
 } from '../../engine/simulator/index.ts';
 import type { Weekday } from '../../engine/types.ts';
 import { CLASS_MINUTES, fromMinutes, toMinutes } from '../../engine/classTime.ts';
+import { dropStart, grabOffset } from '../../engine/timeRange.ts';
 import type { Placement } from '../../engine/simulator/index.ts';
 import type { SimClassRow } from '../../storage/rosterTypes.ts';
 import { ReviewPanel } from './ReviewPanel.tsx';
@@ -195,8 +196,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     }
     const [wd, t] = overId.slice(5).split('|');
     // 잡은 위치만큼 빼서 블록 윗변 = 시작 시간. 10분 칸에 붙는다
-    let m = toMinutes(t) - offset;
-    m = Math.max(range.start, Math.min(range.end - CLASS_MINUTES, m));
+    const m = dropStart(toMinutes(t), offset, CLASS_MINUTES, range.start, range.end);
     return { kind: 'cell', weekday: Number(wd) as Weekday, start: fromMinutes(m) };
   };
   const onDragStart = (e: DragStartEvent) => {
@@ -209,7 +209,7 @@ export function DraftEditor({ draftId }: { draftId: string }) {
     const removedNow = d.classes.find((c) => c.id === id)?.removed;
     if (el && !removedNow) {
       const r = el.getBoundingClientRect();
-      offset = Math.max(0, Math.min(40, Math.floor((((y - r.top) / r.height) * CLASS_MINUTES) / 10) * 10));
+      offset = grabOffset(y, r.top, r.height, CLASS_MINUTES);
     }
     if ('touches' in ev && navigator.vibrate) navigator.vibrate(30);
     setDrag({ id, offset, touch: 'touches' in ev });

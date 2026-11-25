@@ -1,5 +1,6 @@
 // 놓을 수 있는지 판단(SPEC_simulator 4.1). 탭 방식·드래그 방식·새 반 만들기가 모두 이 함수 하나를 쓴다.
 import { CLASS_MINUTES, MIN_GAP_MINUTES, checkClassTime, fromMinutes, toMinutes } from '../classTime.ts';
+import { snapMinutes } from '../timeRange.ts';
 import type { Weekday } from '../types.ts';
 import { liveClasses, slotText, withHoursDefaults, type OperatingHours, type SimDraft } from './model.ts';
 
@@ -11,7 +12,7 @@ export type Placement =
   | { kind: 'block'; reasons: string[] };
 
 /** 10분 단위로 맞춘다(가까운 쪽) */
-export const snapTo10 = (hhmm: string) => fromMinutes(Math.round(toMinutes(hhmm) / 10) * 10);
+export const snapTo10 = (hhmm: string) => fromMinutes(snapMinutes(toMinutes(hhmm)));
 
 /**
  * classId 반을 (weekday, start)에 놓을 수 있는지. classId가 null이면 새 반.

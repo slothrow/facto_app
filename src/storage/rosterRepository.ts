@@ -2,6 +2,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { KeyValueStorage } from './localStorageRepository.ts';
 import { SEED_TEMPLATES } from '../engine/tasks/templates.ts';
+import { SEED_KID_CATEGORIES } from '../engine/harin/seed.ts';
 import {
   ROSTER_KEYS,
   applyChange,
@@ -60,6 +61,10 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   taskStates: 'task_states',
   taskTemplates: 'task_templates',
   todos: 'todos',
+  kidTimetables: 'kid_timetables',
+  kidCategories: 'kid_categories',
+  kidActivities: 'kid_activities',
+  kidBlocks: 'kid_blocks',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -86,6 +91,10 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   taskStates: ['task_key'],
   taskTemplates: ['id'],
   todos: ['id'],
+  kidTimetables: ['id'],
+  kidCategories: ['id'],
+  kidActivities: ['id'],
+  kidBlocks: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);
@@ -179,8 +188,12 @@ export class SupabaseRosterRepository implements RosterRepository {
   }
 
   async replaceAll(data: RosterData): Promise<void> {
-    const { error } = await this.db.rpc('replace_roster', { p_data: rosterToDb(data) });
+    const payload = rosterToDb(data);
+    const { error } = await this.db.rpc('replace_roster', { p_data: payload });
     if (error) throw new Error(error.message);
+    // 하린이 시간표(공부방 데이터와 연결 없음)는 따로 바꾼다. 표가 없는 예전 백업이면 DB 함수가 그대로 둔다
+    const kid = await this.db.rpc('replace_kid_timetable', { p_data: payload });
+    if (kid.error) throw new Error(kid.error.message);
   }
 
   async applyDraft(draftId: string, change: RosterChange): Promise<void> {
@@ -211,6 +224,12 @@ export class LocalRosterRepository implements RosterRepository {
     if (!saved.taskTemplates) {
       // 한 번만 만들고 바로 저장한다(읽을 때마다 id가 바뀌면 할 일 상태가 끊긴다)
       const seeded = { ...emptyRoster(), ...saved, taskTemplates: SEED_TEMPLATES.map((t) => ({ ...t, id: newId() })) };
+      this.write(seeded);
+      return seeded;
+    }
+    // 하린이 시간표 기본 종류(Supabase는 마이그레이션이 넣는다)
+    if (!saved.kidCategories) {
+      const seeded = { ...emptyRoster(), ...saved, kidCategories: SEED_KID_CATEGORIES.map((c) => ({ ...c, id: newId() })) };
       this.write(seeded);
       return seeded;
     }

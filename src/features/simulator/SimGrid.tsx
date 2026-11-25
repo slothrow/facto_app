@@ -8,6 +8,7 @@ import { useDraggable, useDroppable } from '@dnd-kit/core';
 import type { MouseEvent, ReactNode } from 'react';
 import { CLASS_MINUTES, fromMinutes, shortTime, toMinutes } from '../../engine/classTime.ts';
 import type { Placement } from '../../engine/simulator/index.ts';
+import { grabOffset } from '../../engine/timeRange.ts';
 import type { Weekday } from '../../engine/types.ts';
 import type { SimClassRow } from '../../storage/rosterTypes.ts';
 import { WEEKDAY_NAMES } from '../roster/rosterModel.ts';
@@ -199,7 +200,7 @@ function Block({
   const onClick = (e: MouseEvent<HTMLButtonElement>) => {
     // 블록 안에서 누른 위치의 10분 칸(선택한 반을 10분만 옮길 때)
     const rect = e.currentTarget.getBoundingClientRect();
-    const minute = Math.max(0, Math.min(40, Math.floor(((e.clientY - rect.top) / rect.height) * CLASS_MINUTES / 10) * 10));
+    const minute = grabOffset(e.clientY, rect.top, rect.height, CLASS_MINUTES);
     onTap(b.cls.id, fromMinutes(start + minute));
   };
   return (

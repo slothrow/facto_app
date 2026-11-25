@@ -23,6 +23,8 @@ export interface AppSettings {
   lastBackupAt?: string | null;
   /** 기능 켜기/끄기. 26단계. reminders = 예전 할 일 알림(보관 중, 기본 꺼짐) */
   features?: { reminders?: boolean };
+  /** 하린이 시간표 보이는 범위('HH:MM'). 30단계. 없으면 14:00~23:00 */
+  harin?: { viewStart?: string; viewEnd?: string };
 }
 
 /** track_anchors */

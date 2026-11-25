@@ -341,6 +341,69 @@ export interface TodoRow {
   createdBy?: string | null;
 }
 
+// ---------------------------------------------------------------
+// 7단계: 하린이 시간표(SPEC_harin 10장). 공부방 데이터와 연결 없음
+// ---------------------------------------------------------------
+
+/** 시간표 버전(예: 2학기, 겨울방학). isMain은 하나만 true */
+export interface KidTimetableRow {
+  id: string;
+  name: string;
+  memo: string | null;
+  isMain: boolean;
+  sort: number;
+  createdAt?: string;
+}
+
+/** 종류(학원·이동·식사·휴식·숙제·기타 + 추가) */
+export interface KidCategoryRow {
+  id: string;
+  name: string;
+  /** '#rrggbb' */
+  color: string;
+  emoji: string;
+  /** 이동(자동 계산 전용, 삭제 불가) */
+  isTravel: boolean;
+  /** 학원(블록이 학원 목록에서 고른다, 삭제 불가) */
+  isActivity: boolean;
+  /** 새 블록 기본 길이(분) */
+  defaultMinutes: number;
+  sort: number;
+}
+
+/** 학원(수업) */
+export interface KidActivityRow {
+  id: string;
+  name: string;
+  emoji: string;
+  color: string;
+  place: string | null;
+  memo: string | null;
+  /** 이동 시간(분) */
+  travelMinutes: number;
+  /** 집에서 듣는 수업(이동 없음) */
+  isHome: boolean;
+  sort: number;
+}
+
+/** 시간표의 한 칸. 이동 블록은 저장하지 않는다 */
+export interface KidBlockRow {
+  id: string;
+  timetableId: string;
+  /** 1=월 … 5=금 */
+  weekday: number;
+  /** 'HH:MM' 10분 단위 */
+  startTime: string;
+  endTime: string;
+  categoryId: string;
+  activityId: string | null;
+  title: string | null;
+  memo: string | null;
+  /** 이 블록만 앞·뒤 이동 시간(분). null이면 학원 기본값, 0이면 이동 없음 */
+  travelBeforeOverride: number | null;
+  travelAfterOverride: number | null;
+}
+
 export interface RosterData {
   classes: ClassRow[];
   students: StudentRow[];
@@ -364,6 +427,10 @@ export interface RosterData {
   taskStates: TaskStateRow[];
   taskTemplates: TaskTemplateRow[];
   todos: TodoRow[];
+  kidTimetables: KidTimetableRow[];
+  kidCategories: KidCategoryRow[];
+  kidActivities: KidActivityRow[];
+  kidBlocks: KidBlockRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -392,7 +459,14 @@ export const ROSTER_KEYS: RosterKey[] = [
   'taskStates',
   'taskTemplates',
   'todos',
+  'kidTimetables',
+  'kidCategories',
+  'kidActivities',
+  'kidBlocks',
 ];
+
+/** 하린이 시간표 표(백업 복원은 따로: replace_kid_timetable) */
+export const KID_KEYS = ['kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks'] as const;
 
 export const emptyRoster = (): RosterData => ({
   classes: [],
@@ -417,6 +491,10 @@ export const emptyRoster = (): RosterData => ({
   taskStates: [],
   taskTemplates: [],
   todos: [],
+  kidTimetables: [],
+  kidCategories: [],
+  kidActivities: [],
+  kidBlocks: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];
