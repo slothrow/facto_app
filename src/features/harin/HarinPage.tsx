@@ -39,6 +39,7 @@ import type { KidBlockRow } from '../../storage/rosterTypes.ts';
 import { useMedia } from '../simulator/useSimEditor.ts';
 import { BlockSheet, CopySheet, TravelSheet, type BlockSheetMode } from './BlockSheets.tsx';
 import { HarinGrid, TRAVEL_STYLE, type GridBlock, type GridPreview } from './HarinGrid.tsx';
+import { ManageSheet, type ManageTab } from './ManageSheet.tsx';
 import { WEEKDAY_LABEL, copyToDays, moveBlock, newTimetable, replaceBlock, setTravel } from './harinModel.ts';
 import { useHarinEditor } from './useHarinEditor.ts';
 
@@ -62,6 +63,7 @@ export function HarinPage() {
   const [travelSheet, setTravelSheet] = useState<TravelBlock | null>(null);
   const [copyOf, setCopyOf] = useState<KidBlockRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<KidBlockRow | null>(null);
+  const [manage, setManage] = useState<ManageTab | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [preview, setPreview] = useState<GridPreview | null>(null);
   const justDragged = useRef(0);
@@ -297,6 +299,9 @@ export function HarinPage() {
               <RoundButton label="다시 실행" disabled={!canRedo} onClick={redo}>
                 ↷
               </RoundButton>
+              <RoundButton label="관리(시간표·학원·종류·보기)" onClick={() => setManage('timetables')}>
+                ⚙
+              </RoundButton>
             </div>
             {current.memo && <p className="mb-2 px-2 font-sans text-sm text-stone-500">{current.memo}</p>}
 
@@ -381,7 +386,10 @@ export function HarinPage() {
             setSheet(null);
             setCopyOf(b);
           }}
-          onManageActivities={() => showToast('학원 목록 관리는 곧 생겨요')}
+          onManageActivities={() => {
+            setSheet(null);
+            setManage('activities');
+          }}
           onClose={() => setSheet(null)}
         />
       )}
@@ -392,6 +400,18 @@ export function HarinPage() {
           activity={acts.find((a) => a.id === travelOwner.activityId)}
           onSet={(m) => setTravelMinutes(travelSheet, m)}
           onClose={() => setTravelSheet(null)}
+        />
+      )}
+      {manage && (
+        <ManageSheet
+          initialTab={manage}
+          currentId={current?.id ?? null}
+          onOpenTimetable={(id) => {
+            setPickedId(id);
+            setSelectedId(null);
+            setManage(null);
+          }}
+          onClose={() => setManage(null)}
         />
       )}
       {copyOf && <CopySheet block={copyOf} label={labelOf(copyOf)} onCopy={(d) => doCopy(copyOf, d)} onClose={() => setCopyOf(null)} />}
