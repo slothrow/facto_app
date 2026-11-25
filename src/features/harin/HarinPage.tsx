@@ -40,6 +40,8 @@ import { useMedia } from '../simulator/useSimEditor.ts';
 import { BlockSheet, CopySheet, TravelSheet, type BlockSheetMode } from './BlockSheets.tsx';
 import { HarinGrid, TRAVEL_STYLE, type GridBlock, type GridPreview } from './HarinGrid.tsx';
 import { ManageSheet, type ManageTab } from './ManageSheet.tsx';
+import { ImageSheet } from './ImageSheet.tsx';
+import type { LegendItem } from './HarinPoster.tsx';
 import { WEEKDAY_LABEL, copyToDays, moveBlock, newTimetable, replaceBlock, setTravel } from './harinModel.ts';
 import { useHarinEditor } from './useHarinEditor.ts';
 
@@ -64,6 +66,7 @@ export function HarinPage() {
   const [copyOf, setCopyOf] = useState<KidBlockRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<KidBlockRow | null>(null);
   const [manage, setManage] = useState<ManageTab | null>(null);
+  const [imageOpen, setImageOpen] = useState(false);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [preview, setPreview] = useState<GridPreview | null>(null);
   const justDragged = useRef(0);
@@ -80,6 +83,15 @@ export function HarinPage() {
   const range = visibleRange(data.settings.harin, [...blocks, ...travel]);
   const days = phonePortrait ? [day] : [...KID_WEEKDAYS];
   const selected = blocks.find((b) => b.id === selectedId) ?? null;
+  // 이미지 범례: 쓴 학원 → 쓴 종류(학원 제외) → 이동
+  const legend: LegendItem[] = [
+    ...acts.filter((a) => blocks.some((b) => b.activityId === a.id)).sort((a, b) => a.sort - b.sort).map((a) => ({ emoji: a.emoji, name: a.name, color: a.color })),
+    ...cats
+      .filter((c) => !c.isTravel && !c.isActivity && blocks.some((b) => b.categoryId === c.id && !b.activityId))
+      .sort((a, b) => a.sort - b.sort)
+      .map((c) => ({ emoji: c.emoji, name: c.name, color: c.color })),
+    ...(travel.length ? [{ emoji: travelCat?.emoji ?? '🚶', name: travelCat?.name ?? '이동', color: null }] : []),
+  ];
   const labelOf = (b: KidBlockRow) => {
     const l = blockLook(b, acts, cats);
     return `${l.emoji} ${l.name}`;
@@ -253,14 +265,13 @@ export function HarinPage() {
             ← 공부방
           </button>
           <h1 className="min-w-0 flex-1 truncate text-center text-2xl text-rose-500">🌷 하린이 시간표</h1>
-          <button
-            type="button"
-            onClick={() => setShowToday((v) => !v)}
-            aria-pressed={showToday}
-            className={`h-11 shrink-0 rounded-full px-4 text-lg shadow-sm ${showToday ? 'bg-rose-400 text-white' : 'bg-white text-rose-500'}`}
-          >
-            오늘
-          </button>
+          {current ? (
+            <RoundButton label="관리(시간표·학원·종류·보기)" onClick={() => setManage('timetables')}>
+              ⚙️
+            </RoundButton>
+          ) : (
+            <span className="w-11 shrink-0" />
+          )}
         </header>
 
         {!current ? (
@@ -299,9 +310,19 @@ export function HarinPage() {
               <RoundButton label="다시 실행" disabled={!canRedo} onClick={redo}>
                 ↷
               </RoundButton>
-              <RoundButton label="관리(시간표·학원·종류·보기)" onClick={() => setManage('timetables')}>
-                ⚙
-              </RoundButton>
+            </div>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setShowToday((v) => !v)}
+                aria-pressed={showToday}
+                className={`h-11 rounded-full text-lg shadow-sm ${showToday ? 'bg-rose-400 text-white' : 'bg-white text-rose-500'}`}
+              >
+                📋 오늘 일정
+              </button>
+              <button type="button" onClick={() => setImageOpen(true)} className="h-11 rounded-full bg-white text-lg text-rose-500 shadow-sm active:bg-rose-50">
+                🖼️ 이미지·카톡
+              </button>
             </div>
             {current.memo && <p className="mb-2 px-2 font-sans text-sm text-stone-500">{current.memo}</p>}
 
@@ -348,7 +369,11 @@ export function HarinPage() {
                 unitClass={phonePortrait ? '[--u:2.2px]' : '[--u:1.7px] lg:[--u:1.9px]'}
               />
             </DndContext>
-            {blocks.length === 0 && <p className="mt-3 text-center font-sans text-base text-stone-500">빈 칸을 누르면 일정을 넣을 수 있어요.</p>}
+            <p className="mt-4 px-1 text-center font-sans text-sm leading-relaxed text-stone-500">
+              빈 칸을 누르면 일정 넣기 · 일정을 누르면 선택(한 번 더 누르면 고치기) · 선택 후 빈 칸을 누르면 옮기기
+              <br />
+              끌어서 옮기기(폰은 길게 누른 뒤) · 선택한 일정 아래 손잡이로 길이 조절 · 회색 이동을 누르면 이번만 바꾸기
+            </p>
           </>
         )}
       </div>
@@ -412,6 +437,12 @@ export function HarinPage() {
             setManage(null);
           }}
           onClose={() => setManage(null)}
+        />
+      )}
+      {imageOpen && current && (
+        <ImageSheet
+          poster={{ name: current.name, memo: current.memo, range, blocks: grid, travel, travelEmoji: travelCat?.emoji ?? '🚶', legend }}
+          onClose={() => setImageOpen(false)}
         />
       )}
       {copyOf && <CopySheet block={copyOf} label={labelOf(copyOf)} onCopy={(d) => doCopy(copyOf, d)} onClose={() => setCopyOf(null)} />}

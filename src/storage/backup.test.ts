@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createSeedAppData } from '../data/seedAppData.ts';
 import { parseFullBackup, toBackupJson, toFullBackupJson } from './backup.ts';
 import { emptyRoster } from './rosterTypes.ts';
+import { rosterToDb } from './rosterRepository.ts';
 
 describe('백업(학생 데이터 포함)', () => {
   it('학생 데이터까지 내보내고 다시 읽는다', () => {
@@ -50,6 +51,25 @@ describe('백업(학생 데이터 포함)', () => {
     const oldBack = parseFullBackup(JSON.stringify(old));
     expect(oldBack.rosterMissing).toEqual(['attendanceChecks', 'tasks', 'taskStates', 'taskTemplates']);
     expect(oldBack.roster?.tasks).toEqual([]);
+  });
+
+  it('7단계 하린이 시간표 표도 백업에 들어가고(DB 이름도 kid_*), 예전 백업엔 빠졌다고 알려 준다', () => {
+    const app = createSeedAppData();
+    const roster = {
+      ...emptyRoster(),
+      kidTimetables: [{ id: 't', name: '2학기', memo: null, isMain: true, sort: 1 }],
+      kidCategories: [{ id: 'c', name: '식사', color: '#fed7aa', emoji: '🍚', isTravel: false, isActivity: false, defaultMinutes: 30, sort: 1 }],
+      kidActivities: [{ id: 'a', name: '피아노', emoji: '🎹', color: '#fbcfe8', place: null, memo: null, travelMinutes: 20, isHome: false, sort: 1 }],
+      kidBlocks: [{ id: 'b', timetableId: 't', weekday: 1, startTime: '15:00', endTime: '15:50', categoryId: 'c', activityId: 'a', title: null, memo: null, travelBeforeOverride: 0, travelAfterOverride: null }],
+    };
+    const back = parseFullBackup(toFullBackupJson(app, roster));
+    expect(back.roster).toEqual(roster);
+    const db = rosterToDb(roster);
+    expect(db.kid_blocks[0]).toMatchObject({ timetable_id: 't', start_time: '15:00', travel_before_override: 0 });
+    expect(Object.keys(db)).toEqual(expect.arrayContaining(['kid_timetables', 'kid_categories', 'kid_activities', 'kid_blocks']));
+    const old = JSON.parse(toFullBackupJson(app, roster));
+    for (const k of ['kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks']) delete old.roster[k];
+    expect(parseFullBackup(JSON.stringify(old)).rosterMissing).toEqual(['kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks']);
   });
 
   it('예전 백업(학생 데이터 없음)도 읽는다', () => {

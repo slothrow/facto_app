@@ -2,6 +2,7 @@
 // 입력·체크는 화면에 바로 반영하고 저장은 뒤에서 한다(RosterContext.mutate). 실패하면 알림 후 서버 상태로 되돌린다.
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
+import { navigate } from '../../app/router.ts';
 import { todayStr, useRoster } from '../../app/RosterContext.tsx';
 import { ChevronLeft, ChevronRight } from '../../components/icons.tsx';
 import { BottomSheet, Button, ConfirmDialog, inputClass } from '../../components/ui.tsx';
@@ -109,7 +110,7 @@ export function TodoPage() {
           <button type="button" aria-label="이전" onClick={() => step(-1)} className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-stone-100">
             <ChevronLeft className="h-6 w-6" />
           </button>
-          <h1 className="min-w-0 flex-1 text-center text-xl font-bold">
+          <h1 className="min-w-0 flex-1 truncate text-center text-lg font-bold whitespace-nowrap min-[380px]:text-xl">
             {ym.slice(0, 4)}년 {Number(ym.slice(5))}월
           </h1>
           <button type="button" aria-label="다음" onClick={() => step(1)} className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-stone-100">
@@ -118,6 +119,15 @@ export function TodoPage() {
           <Button className="ml-1" onClick={() => setCursor(today)}>
             오늘
           </Button>
+          {/* 하린이 시간표(SPEC_harin 2장): 작게 */}
+          <button
+            type="button"
+            onClick={() => navigate('/harin')}
+            className="ml-1 h-11 shrink-0 rounded-full bg-rose-50 px-2.5 text-sm font-semibold text-rose-500 ring-1 ring-rose-200 active:bg-rose-100"
+            aria-label="하린이 시간표"
+          >
+            하린
+          </button>
         </div>
         <div className="grid grid-cols-4 gap-1 rounded-xl bg-stone-100 p-1" role="tablist">
           {TODO_VIEWS.map((v) => (

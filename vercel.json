@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/harin", "destination": "/harin.html" }]
+}
