@@ -65,6 +65,9 @@ export const ROSTER_TABLE: Record<RosterKey, string> = {
   kidCategories: 'kid_categories',
   kidActivities: 'kid_activities',
   kidBlocks: 'kid_blocks',
+  kidHomeworks: 'kid_homeworks',
+  kidHomeworkChecks: 'kid_homework_checks',
+  devRequests: 'dev_requests',
 };
 
 /** 삭제할 때 행을 찾는 열 */
@@ -95,6 +98,9 @@ const KEY_COLUMNS: Record<RosterKey, string[]> = {
   kidCategories: ['id'],
   kidActivities: ['id'],
   kidBlocks: ['id'],
+  kidHomeworks: ['id'],
+  kidHomeworkChecks: ['date', 'homework_id'],
+  devRequests: ['id'],
 };
 
 const DB_ONLY = new Set(['created_at', 'updated_at', 'updated_by']);
@@ -119,7 +125,8 @@ export function rowToDb(key: RosterKey, row: object): Row {
 
 export function rowFromDb(key: RosterKey, row: Row): object {
   const out: Row = {};
-  for (const [k, v] of Object.entries(row)) if (!DB_ONLY.has(k)) out[toCamel(k)] = v;
+  // 개선 요청 메모는 작성일을 화면에 보여 줘서 created_at을 읽는다
+  for (const [k, v] of Object.entries(row)) if (!DB_ONLY.has(k) || (key === 'devRequests' && k === 'created_at')) out[toCamel(k)] = v;
   if (key === 'students') {
     out.guardians = ((row.guardians as Row[] | null) ?? []).map((g) => ({
       name: (g.name as string) ?? '',
@@ -194,6 +201,9 @@ export class SupabaseRosterRepository implements RosterRepository {
     // 하린이 시간표(공부방 데이터와 연결 없음)는 따로 바꾼다. 표가 없는 예전 백업이면 DB 함수가 그대로 둔다
     const kid = await this.db.rpc('replace_kid_timetable', { p_data: payload });
     if (kid.error) throw new Error(kid.error.message);
+    // 앱 개선 요청 메모도 따로(예전 백업이면 DB 함수가 그대로 둔다)
+    const dev = await this.db.rpc('replace_dev_requests', { p_data: payload });
+    if (dev.error) throw new Error(dev.error.message);
   }
 
   async applyDraft(draftId: string, change: RosterChange): Promise<void> {

@@ -404,6 +404,53 @@ export interface KidBlockRow {
   travelAfterOverride: number | null;
 }
 
+/** 숙제 과목(고정 5개) */
+export type KidSubject = 'korean' | 'english' | 'math' | 'reading' | 'other';
+export type KidHomeworkRepeat = 'daily' | 'academy' | 'once';
+export type KidHomeworkDueRule = 'day_before' | 'same_day';
+
+/** 하린이 숙제(SPEC_harin 15장). 한 번 등록해 두고 날짜별로 계산해서 보여 준다 */
+export interface KidHomeworkRow {
+  id: string;
+  name: string;
+  subject: KidSubject;
+  emoji: string;
+  /** 예상 시간(분) */
+  minutes: number | null;
+  memo: string | null;
+  active: boolean;
+  repeatType: KidHomeworkRepeat;
+  /** daily: 하는 요일(1=월 … 5=금) */
+  weekdays: number[] | null;
+  /** academy: 학원 목록의 학원 */
+  activityId: string | null;
+  /** academy: 다음 수업 전날 / 다음 수업 당일(학원 가기 전) */
+  dueRule: KidHomeworkDueRule | null;
+  /** once: 마감일 'YYYY-MM-DD' */
+  dueDate: string | null;
+  sort: number;
+}
+
+/** 숙제 체크(그 숙제를 해야 하는 날짜 기준) */
+export interface KidHomeworkCheckRow {
+  date: string;
+  homeworkId: string;
+  doneAt: string;
+  doneBy?: string | null;
+}
+
+/** 앱 개선 요청 메모(SPEC_home 9장) */
+export interface DevRequestRow {
+  id: string;
+  text: string;
+  done: boolean;
+  doneAt: string | null;
+  sort: number;
+  createdBy?: string | null;
+  /** 작성 시각(ISO). DB가 채우고, 화면에는 날짜만 보인다 */
+  createdAt: string;
+}
+
 export interface RosterData {
   classes: ClassRow[];
   students: StudentRow[];
@@ -431,6 +478,9 @@ export interface RosterData {
   kidCategories: KidCategoryRow[];
   kidActivities: KidActivityRow[];
   kidBlocks: KidBlockRow[];
+  kidHomeworks: KidHomeworkRow[];
+  kidHomeworkChecks: KidHomeworkCheckRow[];
+  devRequests: DevRequestRow[];
 }
 
 export type RosterKey = keyof RosterData;
@@ -463,10 +513,13 @@ export const ROSTER_KEYS: RosterKey[] = [
   'kidCategories',
   'kidActivities',
   'kidBlocks',
+  'kidHomeworks',
+  'kidHomeworkChecks',
+  'devRequests',
 ];
 
 /** 하린이 시간표 표(백업 복원은 따로: replace_kid_timetable) */
-export const KID_KEYS = ['kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks'] as const;
+export const KID_KEYS = ['kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks', 'kidHomeworks', 'kidHomeworkChecks'] as const;
 
 export const emptyRoster = (): RosterData => ({
   classes: [],
@@ -495,6 +548,9 @@ export const emptyRoster = (): RosterData => ({
   kidCategories: [],
   kidActivities: [],
   kidBlocks: [],
+  kidHomeworks: [],
+  kidHomeworkChecks: [],
+  devRequests: [],
 });
 
 type RowOf<K extends RosterKey> = RosterData[K][number];
@@ -519,6 +575,10 @@ export function rowKey<K extends RosterKey>(key: K, row: RowOf<K>): string {
     }
     case 'taskStates':
       return (row as TaskStateRow).taskKey;
+    case 'kidHomeworkChecks': {
+      const r = row as KidHomeworkCheckRow;
+      return `${r.date}|${r.homeworkId}`;
+    }
     default:
       return (row as { id: string }).id;
   }

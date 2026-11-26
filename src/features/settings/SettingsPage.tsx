@@ -31,7 +31,7 @@ import { TemplatesSection } from './TemplatesSection.tsx';
 import { remindersOn } from '../todos/todoModel.ts';
 
 /** 예전 백업에 없으면 지금 데이터를 남기는 항목 */
-const KEEP_IF_MISSING = ['briefingTexts', 'personalBriefingTexts', 'tasks', 'taskStates', 'taskTemplates', 'todos', 'kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks'] as const;
+const KEEP_IF_MISSING = ['briefingTexts', 'personalBriefingTexts', 'tasks', 'taskStates', 'taskTemplates', 'todos', 'kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks', 'kidHomeworks', 'kidHomeworkChecks', 'devRequests'] as const;
 
 const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
 const withDay = (date: string) => `${date.slice(0, 4)}.${md(date)} (${WEEKDAY_NAMES[weekdayOf(date)]})`;

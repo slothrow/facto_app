@@ -72,6 +72,28 @@ describe('백업(학생 데이터 포함)', () => {
     expect(parseFullBackup(JSON.stringify(old)).rosterMissing).toEqual(['kidTimetables', 'kidCategories', 'kidActivities', 'kidBlocks']);
   });
 
+  it('8단계 숙제·숙제 체크·개선 요청도 백업에 들어가고(DB 이름 변환), 예전 백업엔 빠졌다고 알려 준다', () => {
+    const app = createSeedAppData();
+    const roster = {
+      ...emptyRoster(),
+      kidHomeworks: [
+        { id: 'h', name: '영어 숙제', subject: 'english' as const, emoji: '🔤', minutes: 20, memo: null, active: true, repeatType: 'academy' as const, weekdays: null, activityId: 'a', dueRule: 'day_before' as const, dueDate: null, sort: 1 },
+      ],
+      kidHomeworkChecks: [{ date: '2026-12-01', homeworkId: 'h', doneAt: '2026-12-01T10:00:00Z' }],
+      devRequests: [{ id: 'd', text: '버튼을 크게\n두 줄', done: false, doneAt: null, sort: 1, createdAt: '2026-11-26T00:00:00Z' }],
+    };
+    const back = parseFullBackup(toFullBackupJson(app, roster));
+    expect(back.roster).toEqual(roster);
+    expect(back.rosterMissing).toEqual([]);
+    const db = rosterToDb(roster);
+    expect(db.kid_homeworks[0]).toMatchObject({ repeat_type: 'academy', activity_id: 'a', due_rule: 'day_before' });
+    expect(db.kid_homework_checks[0]).toMatchObject({ homework_id: 'h', date: '2026-12-01' });
+    expect(db.dev_requests[0]).toMatchObject({ text: '버튼을 크게\n두 줄', done: false });
+    const old = JSON.parse(toFullBackupJson(app, roster));
+    for (const k of ['kidHomeworks', 'kidHomeworkChecks', 'devRequests']) delete old.roster[k];
+    expect(parseFullBackup(JSON.stringify(old)).rosterMissing).toEqual(['kidHomeworks', 'kidHomeworkChecks', 'devRequests']);
+  });
+
   it('예전 백업(학생 데이터 없음)도 읽는다', () => {
     const back = parseFullBackup(toBackupJson(createSeedAppData()));
     expect(back.roster).toBeNull();
