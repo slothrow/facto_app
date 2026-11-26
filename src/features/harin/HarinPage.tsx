@@ -1,5 +1,5 @@
-// 하린이 시간표 화면(SPEC_harin 2·3·7장). 주소 #/harin. 하단 탭 없이 전체 화면, 파스텔 톤.
-// 폰 세로: 요일 탭으로 한 요일씩. 가로·PC: 월~금 전체. [오늘]: 오늘(주말이면 월요일) 일정 목록.
+// 하린이 시간표 화면(SPEC_harin 2·3·7·14장). 주소 #/harin. 하단 탭 없이 전체 화면, 파스텔 톤.
+// [주간](기본): 월~금 5일 한 화면(폰 세로는 칸이 좁아 보기 전용 + 블록 탭 상세). [하루]: 한 요일을 크게 + 시간순 목록.
 // 편집(편성 시뮬레이터 방식): 블록 탭 → 선택 → 칸 탭으로 옮기기 / 다시 탭하면 고치기.
 // 끌기: PC는 마우스로 5px 이상, 폰은 0.25초 길게 눌러서. 선택한 블록 아래 손잡이를 끌면 길이 조절.
 import {
@@ -14,7 +14,7 @@ import {
   type DragMoveEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppData } from '../../app/AppDataContext.tsx';
 import { navigate } from '../../app/router.ts';
 import { todayStr, useRoster } from '../../app/RosterContext.tsx';
@@ -38,10 +38,11 @@ import { dropStart, grabOffset, snapMinutes } from '../../engine/timeRange.ts';
 import type { KidBlockRow } from '../../storage/rosterTypes.ts';
 import { useMedia } from '../simulator/useSimEditor.ts';
 import { BlockSheet, CopySheet, TravelSheet, type BlockSheetMode } from './BlockSheets.tsx';
-import { HarinGrid, TRAVEL_STYLE, type GridBlock, type GridPreview } from './HarinGrid.tsx';
+import { HarinGrid, type GridBlock, type GridPreview } from './HarinGrid.tsx';
 import { ManageSheet, type ManageTab } from './ManageSheet.tsx';
 import { ImageSheet } from './ImageSheet.tsx';
 import type { LegendItem } from './HarinPoster.tsx';
+import { BlockDetailSheet, DayChips, DayList, EditHintSheet, ViewToggle, loadView, saveView, useSwipe, type HarinView } from './ViewParts.tsx';
 import { WEEKDAY_LABEL, copyToDays, moveBlock, newTimetable, replaceBlock, setTravel } from './harinModel.ts';
 import { useHarinEditor } from './useHarinEditor.ts';
 
@@ -51,13 +52,18 @@ export function HarinPage() {
   const { data, showToast } = useAppData();
   const { roster, mutate } = useRoster();
   const phonePortrait = useMedia('(max-width: 767px) and (orientation: portrait)');
+  const [view, setViewState] = useState<HarinView>(loadView);
+  const setView = (v: HarinView) => {
+    setViewState(v);
+    saveView(v);
+    setSelectedId(null);
+  };
   const timetables = useMemo(() => [...roster.kidTimetables].sort((a, b) => a.sort - b.sort), [roster.kidTimetables]);
   const main = mainTimetable(timetables);
   const [pickedId, setPickedId] = useState<string | null>(null);
   const current = timetables.find((t) => t.id === pickedId) ?? main;
   const todayWd = agendaWeekday(todayStr());
   const [day, setDay] = useState<number>(todayWd);
-  const [showToday, setShowToday] = useState(false);
   const { blocks, apply, undo, redo, canUndo, canRedo } = useHarinEditor(current?.id ?? null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -67,6 +73,8 @@ export function HarinPage() {
   const [confirmDelete, setConfirmDelete] = useState<KidBlockRow | null>(null);
   const [manage, setManage] = useState<ManageTab | null>(null);
   const [imageOpen, setImageOpen] = useState(false);
+  const [detail, setDetail] = useState<KidBlockRow | null>(null);
+  const [hintDay, setHintDay] = useState<number | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [preview, setPreview] = useState<GridPreview | null>(null);
   const justDragged = useRef(0);
@@ -81,7 +89,20 @@ export function HarinPage() {
   const travelCat = cats.find((c) => c.isTravel);
   const grid: GridBlock[] = blocks.map((b) => ({ block: b, look: blockLook(b, acts, cats) }));
   const range = visibleRange(data.settings.harin, [...blocks, ...travel]);
-  const days = phonePortrait ? [day] : [...KID_WEEKDAYS];
+  /** 폰 세로 주간: 칸이 좁아 보기 전용(블록 탭 = 상세, 빈 칸 = 편집 안내) */
+  const readOnly = view === 'week' && phonePortrait;
+  const days = view === 'day' ? [day] : [...KID_WEEKDAYS];
+  const editInDay = (wd: number) => {
+    setDetail(null);
+    setHintDay(null);
+    setDay(wd);
+    setView('day');
+  };
+  const swipe = useSwipe(
+    (dir) => setDay((d) => Math.min(5, Math.max(1, d + dir))),
+    () => drag !== null || Date.now() - justDragged.current < 600 || sheet !== null,
+  );
+  useEffect(() => setSelectedId(null), [view]);
   const selected = blocks.find((b) => b.id === selectedId) ?? null;
   // 이미지 범례: 쓴 학원 → 쓴 종류(학원 제외) → 이동
   const legend: LegendItem[] = [
@@ -111,6 +132,10 @@ export function HarinPage() {
 
   const onCell = (weekday: number, start: string) => {
     if (!current) return;
+    if (readOnly) {
+      setHintDay(weekday);
+      return;
+    }
     if (selected) {
       if (tryMove(selected, weekday, start)) {
         showToast(`${WEEKDAY_LABEL[weekday]} ${shortTime(start)}로 옮겼어요`);
@@ -124,6 +149,11 @@ export function HarinPage() {
 
   const onBlock = (id: string) => {
     if (Date.now() - justDragged.current < 400) return; // 끌기 끝의 클릭은 무시
+    if (readOnly) {
+      const b = blocks.find((x) => x.id === id);
+      if (b) setDetail(b);
+      return;
+    }
     if (selectedId === id) {
       const b = blocks.find((x) => x.id === id);
       if (b) setSheet({ kind: 'edit', block: b });
@@ -312,39 +342,17 @@ export function HarinPage() {
               </RoundButton>
             </div>
             <div className="mb-3 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setShowToday((v) => !v)}
-                aria-pressed={showToday}
-                className={`h-11 rounded-full text-lg shadow-sm ${showToday ? 'bg-rose-400 text-white' : 'bg-white text-rose-500'}`}
-              >
-                📋 오늘 일정
-              </button>
+              <ViewToggle view={view} onChange={setView} />
               <button type="button" onClick={() => setImageOpen(true)} className="h-11 rounded-full bg-white text-lg text-rose-500 shadow-sm active:bg-rose-50">
                 🖼️ 이미지·카톡
               </button>
             </div>
             {current.memo && <p className="mb-2 px-2 font-sans text-sm text-stone-500">{current.memo}</p>}
 
-            {showToday && <TodayCard items={dayAgenda(blocks, acts, cats, todayWd)} weekday={todayWd} weekend={todayWd !== new Date().getDay()} />}
+            {view === 'day' && <DayChips day={day} todayWd={todayWd} onChange={setDay} />}
 
-            {phonePortrait && (
-              <div className="mb-2 flex gap-1 rounded-full bg-white p-1 shadow-sm" role="tablist">
-                {KID_WEEKDAYS.map((wd) => (
-                  <button
-                    key={wd}
-                    type="button"
-                    role="tab"
-                    aria-selected={day === wd}
-                    onClick={() => setDay(wd)}
-                    className={`h-11 flex-1 rounded-full text-xl ${day === wd ? 'bg-rose-400 text-white' : wd === todayWd ? 'text-rose-500' : 'text-stone-500'}`}
-                  >
-                    {WEEKDAY_LABEL[wd]}
-                  </button>
-                ))}
-              </div>
-            )}
-
+            <div className={view === 'day' ? 'md:flex md:items-start md:gap-4' : ''} {...(view === 'day' ? swipe : {})}>
+            <div className={view === 'day' ? 'md:min-w-0 md:flex-1' : ''}>
             <DndContext
               sensors={sensors}
               collisionDetection={collision}
@@ -359,20 +367,34 @@ export function HarinPage() {
                 blocks={grid}
                 travel={travel}
                 travelEmoji={travelCat?.emoji ?? '🚶'}
-                editable
+                editable={!readOnly}
+                compact={readOnly}
                 selectedId={selectedId}
                 draggingId={drag?.kind === 'move' ? drag.id : null}
                 preview={preview}
                 onCell={onCell}
                 onBlock={onBlock}
                 onTravel={setTravelSheet}
-                unitClass={phonePortrait ? '[--u:2.2px]' : '[--u:1.7px] lg:[--u:1.9px]'}
+                unitClass={view === 'day' ? '[--u:2.4px] md:[--u:2.2px]' : readOnly ? '[--u:2px]' : '[--u:1.7px] lg:[--u:1.9px]'}
               />
             </DndContext>
+            </div>
+            {view === 'day' && (
+              <div className="mt-4 md:mt-0 md:w-72 md:shrink-0">
+                <DayList items={dayAgenda(blocks, acts, cats, day)} weekday={day} isToday={day === todayWd && todayWd === new Date().getDay()} />
+              </div>
+            )}
+            </div>
             <p className="mt-4 px-1 text-center font-sans text-sm leading-relaxed text-stone-500">
-              빈 칸을 누르면 일정 넣기 · 일정을 누르면 선택(한 번 더 누르면 고치기) · 선택 후 빈 칸을 누르면 옮기기
-              <br />
-              끌어서 옮기기(폰은 길게 누른 뒤) · 선택한 일정 아래 손잡이로 길이 조절 · 회색 이동을 누르면 이번만 바꾸기
+              {readOnly ? (
+                <>일정을 누르면 자세히 볼 수 있어요 · 일정을 넣거나 옮기려면 [하루]로 바꿔 주세요</>
+              ) : (
+                <>
+                  빈 칸을 누르면 일정 넣기 · 일정을 누르면 선택(한 번 더 누르면 고치기) · 선택 후 빈 칸을 누르면 옮기기
+                  <br />
+                  끌어서 옮기기(폰은 길게 누른 뒤) · 선택한 일정 아래 손잡이로 길이 조절 · 회색 이동을 누르면 이번만 바꾸기
+                </>
+              )}
             </p>
           </>
         )}
@@ -445,6 +467,10 @@ export function HarinPage() {
           onClose={() => setImageOpen(false)}
         />
       )}
+      {detail && (
+        <BlockDetailSheet block={detail} look={blockLook(detail, acts, cats)} onEditInDay={() => editInDay(detail.weekday)} onClose={() => setDetail(null)} />
+      )}
+      {hintDay !== null && <EditHintSheet weekday={hintDay} onEditInDay={() => editInDay(hintDay)} onClose={() => setHintDay(null)} />}
       {copyOf && <CopySheet block={copyOf} label={labelOf(copyOf)} onCopy={(d) => doCopy(copyOf, d)} onClose={() => setCopyOf(null)} />}
       {confirmDelete && (
         <ConfirmDialog
@@ -484,35 +510,5 @@ function ToolButton({ onClick, danger, children }: { onClick: () => void; danger
     >
       {children}
     </button>
-  );
-}
-
-function TodayCard({ items, weekday, weekend }: { items: ReturnType<typeof dayAgenda>; weekday: number; weekend: boolean }) {
-  return (
-    <section className="mb-3 rounded-3xl bg-white p-4 shadow-sm">
-      <h2 className="mb-2 text-xl text-rose-500">
-        {weekend ? '월요일 일정 (주말이라 월요일을 보여 줘요)' : `오늘(${WEEKDAY_LABEL[weekday]}) 일정`}
-      </h2>
-      {items.length === 0 ? (
-        <p className="font-sans text-base text-stone-500">일정이 없어요.</p>
-      ) : (
-        <ol className="space-y-1.5">
-          {items.map((it, i) => (
-            <li key={i} className="flex items-center gap-2 text-lg">
-              <span className="w-12 shrink-0 text-right text-stone-500">{shortTime(it.startTime)}</span>
-              {it.kind === 'travel' ? (
-                <span className="rounded-full px-2 text-base text-stone-500" style={TRAVEL_STYLE}>
-                  {it.emoji} {it.name} {it.minutes}분
-                </span>
-              ) : (
-                <span className="min-w-0 truncate">
-                  {it.emoji} {it.name} <span className="text-base text-stone-500">({shortTime(it.startTime)}~{shortTime(it.endTime)})</span>
-                </span>
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
   );
 }

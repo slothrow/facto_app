@@ -2,7 +2,7 @@
 // 편집할 때: 블록 = 끌기(block:id), 선택한 블록 아래 손잡이 = 길이 조절(resize:id), 10분 칸 = 놓는 곳(cell:요일|HH:MM).
 // DndContext 안에서만 쓴다(편성 시뮬레이터 SimGrid와 같은 방식).
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { fromMinutes, shortTime, toMinutes } from '../../engine/classTime.ts';
 import { isShortBlock, type BlockLook, type TravelBlock } from '../../engine/harin/index.ts';
 import type { KidBlockRow } from '../../storage/rosterTypes.ts';
@@ -42,6 +42,8 @@ export function HarinGrid({
   onBlock,
   onTravel,
   unitClass = '[--u:2px]',
+  compact = false,
+  dayHeader,
 }: {
   days: number[];
   range: { start: number; end: number };
@@ -57,31 +59,37 @@ export function HarinGrid({
   onTravel?: (t: TravelBlock) => void;
   /** 1분당 높이(css 변수 --u) */
   unitClass?: string;
+  /** 폰 세로 주간: 좁은 칸용. 블록은 `이모지 이름` 한 줄만, 시각 눈금도 좁게 */
+  compact?: boolean;
+  /** 요일 머리글 아래에 붙일 것(숙제 개수 배지 등) */
+  dayHeader?: (weekday: number) => ReactNode;
 }) {
   const slots: number[] = [];
   for (let m = range.start; m < range.end; m += 10) slots.push(m);
   const labels = slots.filter((m) => m % 30 === 0);
   const height = px(range.end - range.start);
+  const labelW = compact ? 'w-7' : 'w-9';
 
   return (
     <div className={unitClass}>
       {days.length > 1 && (
-        <div className="flex gap-1.5">
-          <div className="w-9 shrink-0" />
+        <div className={`flex ${compact ? 'gap-1' : 'gap-1.5'}`}>
+          <div className={`${labelW} shrink-0`} />
           {days.map((wd) => (
-            <div key={wd} className="min-w-0 flex-1 pb-1 text-center font-jua text-lg text-rose-500">
-              {WEEKDAY_LABEL[wd]}
+            <div key={wd} className="min-w-0 flex-1 pb-1 text-center font-jua text-rose-500">
+              <div className={compact ? 'text-base' : 'text-lg'}>{WEEKDAY_LABEL[wd]}</div>
+              {dayHeader?.(wd)}
             </div>
           ))}
         </div>
       )}
-      <div className="flex gap-1.5">
+      <div className={`flex ${compact ? 'gap-1' : 'gap-1.5'}`}>
         {/* 시각 눈금 */}
-        <div className="relative w-9 shrink-0" style={{ height }}>
+        <div className={`relative ${labelW} shrink-0`} style={{ height }}>
           {labels.map((m) => (
             <span
               key={m}
-              className={`absolute right-1 -translate-y-1/2 font-jua leading-none ${m % 60 === 0 ? 'text-sm text-stone-600' : 'text-[11px] text-stone-400'}`}
+              className={`absolute right-0.5 -translate-y-1/2 font-jua leading-none ${m % 60 === 0 ? (compact ? 'text-xs' : 'text-sm') + ' text-stone-600' : compact ? 'hidden' : 'text-[11px] text-stone-400'}`}
               style={{ top: px(m - range.start) }}
             >
               {shortTime(fromMinutes(m))}
@@ -112,7 +120,7 @@ export function HarinGrid({
             {travel
               .filter((t) => t.weekday === wd)
               .map((t) => (
-                <TravelView key={`${t.ownerId}-${t.side}`} t={t} range={range} emoji={travelEmoji} onTap={onTravel} />
+                <TravelView key={`${t.ownerId}-${t.side}`} t={t} range={range} emoji={travelEmoji} onTap={onTravel} compact={compact} />
               ))}
 
             {blocks
@@ -127,6 +135,7 @@ export function HarinGrid({
                   dim={selectedId !== null && selectedId !== g.block.id}
                   dragging={draggingId === g.block.id}
                   onTap={onBlock}
+                  compact={compact}
                 />
               ))}
           </div>
@@ -144,6 +153,7 @@ function BlockView({
   dim,
   dragging,
   onTap,
+  compact,
 }: {
   g: GridBlock;
   range: { start: number; end: number };
@@ -152,16 +162,17 @@ function BlockView({
   dim: boolean;
   dragging: boolean;
   onTap?: (id: string) => void;
+  compact: boolean;
 }) {
   const { block: b, look } = g;
   const s = toMinutes(b.startTime);
   const minutes = toMinutes(b.endTime) - s;
   const drag = useDraggable({ id: `block:${b.id}`, disabled: !editable });
   const t = drag.transform;
-  const short = isShortBlock(minutes);
+  const short = compact || isShortBlock(minutes);
   return (
     <div
-      className={`absolute inset-x-1 ${dragging ? 'z-50' : selected ? 'z-20' : 'z-10'}`}
+      className={`absolute ${compact ? 'inset-x-0.5' : 'inset-x-1'} ${dragging ? 'z-50' : selected ? 'z-20' : 'z-10'}`}
       style={{
         top: px(s - range.start),
         height: px(minutes),
@@ -175,12 +186,17 @@ function BlockView({
         onClick={() => onTap?.(b.id)}
         {...drag.listeners}
         {...drag.attributes}
-        className={`flex h-full w-full select-none [-webkit-touch-callout:none] flex-col overflow-hidden rounded-2xl border-2 border-white px-1.5 text-left font-jua text-stone-800 shadow-[0_2px_6px_rgba(120,80,100,0.18)] ${
+        className={`flex h-full w-full select-none [-webkit-touch-callout:none] flex-col overflow-hidden ${compact ? 'rounded-lg border px-0.5' : 'rounded-2xl border-2 px-1.5'} border-white text-left font-jua text-stone-800 shadow-[0_2px_6px_rgba(120,80,100,0.18)] ${
           short ? 'justify-center' : 'justify-start py-1'
         } ${selected ? 'ring-4 ring-rose-400' : ''} ${dim ? 'opacity-75' : ''} ${dragging ? 'opacity-90 shadow-2xl' : ''}`}
         style={{ backgroundColor: look.color }}
       >
-        {short ? (
+        {compact ? (
+          <span className="truncate text-[11px] leading-tight">
+            {look.emoji}
+            {look.name}
+          </span>
+        ) : short ? (
           <span className="truncate text-[13px] leading-tight md:text-sm">
             {look.emoji} {look.name} <span className="text-stone-600">{shortTime(b.startTime)}</span>
           </span>
@@ -223,11 +239,13 @@ function TravelView({
   range,
   emoji,
   onTap,
+  compact,
 }: {
   t: TravelBlock;
   range: { start: number; end: number };
   emoji: string;
   onTap?: (t: TravelBlock) => void;
+  compact: boolean;
 }) {
   const s = Math.max(range.start, toMinutes(t.startTime));
   const e = Math.min(range.end, toMinutes(t.endTime));
@@ -238,12 +256,12 @@ function TravelView({
       type="button"
       onClick={() => onTap?.(t)}
       title={warn ? t.warnings.join(', ') : undefined}
-      className={`absolute inset-x-3 z-[5] flex items-center justify-center overflow-hidden rounded-xl font-jua text-[11px] leading-none text-stone-500 md:text-xs ${warn ? 'ring-2 ring-amber-400' : ''}`}
+      className={`absolute ${compact ? 'inset-x-1' : 'inset-x-3'} z-[5] flex items-center justify-center overflow-hidden rounded-xl font-jua text-[11px] leading-none text-stone-500 md:text-xs ${warn ? 'ring-2 ring-amber-400' : ''}`}
       style={{ ...TRAVEL_STYLE, top: px(s - range.start), height: px(e - s) }}
     >
       <span className="truncate rounded-full bg-white/80 px-1.5">
         {warn && '⚠️'}
-        {emoji} {t.minutes}분
+        {compact ? `${emoji}${t.minutes}` : `${emoji} ${t.minutes}분`}
       </span>
     </button>
   );
