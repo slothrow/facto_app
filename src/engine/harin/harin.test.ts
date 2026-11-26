@@ -157,7 +157,7 @@ describe('dayAgenda', () => {
       blk(2, '15:00', '15:30'),
     ];
     const items = dayAgenda(blocks, [piano], cats, 1);
-    expect(agendaText(items)).toBe('2:40 🚶 이동 20분 → 3:00 🎹 피아노 (3:00~3:50) → 3:50 🚶 이동 20분 → 4:10 🍚 간식 (4:10~4:30)');
+    expect(agendaText(items)).toBe('2:40 🚶 이동 20분 → 3:00 🎹 피아노 (3:00~3:50) → 3:50 🚶 이동 20분 → 4:10 🍽️ 간식 (4:10~4:30)');
   });
   it('주말이면 월요일', () => {
     expect(agendaWeekday('2026-11-25')).toBe(3);
