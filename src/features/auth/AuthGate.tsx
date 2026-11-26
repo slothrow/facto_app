@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useState, type FormEvent, type Re
 import { Button, Field, inputClass } from '../../components/ui.tsx';
 
 interface AuthValue {
+  /** 로그인한 사용자 id(내가 쓴 글 표시용. 화면에 보이지 않는다) */
+  userId: string;
   email: string;
   signOut: () => Promise<void>;
 }
@@ -26,6 +28,7 @@ export function AuthGate({ db, children }: { db: SupabaseClient; children: (sess
   if (!session) return <LoginPage db={db} />;
 
   const value: AuthValue = {
+    userId: session.user.id,
     email: session.user.email ?? '',
     signOut: async () => {
       await db.auth.signOut();

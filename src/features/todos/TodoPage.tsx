@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from '../../components/icons.tsx';
 import { BottomSheet, Button, ConfirmDialog, inputClass } from '../../components/ui.tsx';
 import { addDays, addMonthsYm, monthEnd, monthOf, monthStart, weekdayOf } from '../../engine/dates.ts';
 import type { TodoRow } from '../../storage/rosterTypes.ts';
+import { DevRequestsCard } from './DevRequestsCard.tsx';
 import {
   TODO_VIEWS,
   dayLabels,
@@ -105,6 +106,7 @@ export function TodoPage() {
 
   return (
     <div className="space-y-3">
+      <DevRequestsCard />
       <header className="space-y-2">
         <div className="flex items-center gap-1">
           <button type="button" aria-label="이전" onClick={() => step(-1)} className="flex h-11 w-11 items-center justify-center rounded-xl active:bg-stone-100">
