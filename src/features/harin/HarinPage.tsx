@@ -25,6 +25,8 @@ import {
   INPUT_START,
   KID_WEEKDAYS,
   agendaWeekday,
+  currentWeekDates,
+  nextWorkdayOnOrAfter,
   blockLook,
   buildTravelBlocks,
   canPlaceKid,
@@ -42,6 +44,7 @@ import { HarinGrid, type GridBlock, type GridPreview } from './HarinGrid.tsx';
 import { ManageSheet, type ManageTab } from './ManageSheet.tsx';
 import { ImageSheet } from './ImageSheet.tsx';
 import type { LegendItem } from './HarinPoster.tsx';
+import { HomeworkBadge, HomeworkChecklist, HomeworkDaySheet, HomeworkPanel, TodayHomeworkCard, useKidHomework } from './HomeworkParts.tsx';
 import { BlockDetailSheet, DayChips, DayList, EditHintSheet, ViewToggle, loadView, saveView, useSwipe, type HarinView } from './ViewParts.tsx';
 import { WEEKDAY_LABEL, copyToDays, moveBlock, newTimetable, replaceBlock, setTravel } from './harinModel.ts';
 import { useHarinEditor } from './useHarinEditor.ts';
@@ -74,6 +77,12 @@ export function HarinPage() {
   const [manage, setManage] = useState<ManageTab | null>(null);
   const [imageOpen, setImageOpen] = useState(false);
   const [detail, setDetail] = useState<KidBlockRow | null>(null);
+  const [hwDate, setHwDate] = useState<string | null>(null);
+  const hw = useKidHomework();
+  const today = todayStr();
+  const weekDays = currentWeekDates(today);
+  /** 그 요일(1~5)의 이번 주 날짜 */
+  const dateOf = (wd: number) => weekDays[wd - 1];
   const [hintDay, setHintDay] = useState<number | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [preview, setPreview] = useState<GridPreview | null>(null);
@@ -113,6 +122,17 @@ export function HarinPage() {
       .map((c) => ({ emoji: c.emoji, name: c.name, color: c.color })),
     ...(travel.length ? [{ emoji: travelCat?.emoji ?? '🚶', name: travelCat?.name ?? '이동', color: null }] : []),
   ];
+  /** 시간표의 "숙제" 종류 블록(탭하면 그날 숙제가 같이 보인다) */
+  const isHomeworkBlock = (b: KidBlockRow) => {
+    const c = cats.find((x) => x.id === b.categoryId);
+    return Boolean(c && !c.isTravel && !c.isActivity && c.name === '숙제');
+  };
+  // 이미지에 넣을 오늘의 숙제(주말이면 다음 월요일 숙제)
+  const posterDate = nextWorkdayOnOrAfter(today);
+  const posterHomework = {
+    label: posterDate === today ? '오늘의 숙제' : `${WEEKDAY_LABEL[agendaWeekday(posterDate)]}요일 숙제`,
+    items: hw.forDate(posterDate).map((h) => ({ emoji: h.emoji, name: h.name, done: hw.isDone(posterDate, h.id) })),
+  };
   const labelOf = (b: KidBlockRow) => {
     const l = blockLook(b, acts, cats);
     return `${l.emoji} ${l.name}`;
@@ -317,6 +337,7 @@ export function HarinPage() {
           </div>
         ) : (
           <>
+            <TodayHomeworkCard today={today} hw={hw} onRegister={() => setManage('homeworks')} />
             <div className="mb-3 flex items-center gap-2">
               <select
                 value={current.id}
@@ -369,6 +390,7 @@ export function HarinPage() {
                 travelEmoji={travelCat?.emoji ?? '🚶'}
                 editable={!readOnly}
                 compact={readOnly}
+                dayHeader={view === 'week' ? (wd) => <HomeworkBadge date={dateOf(wd)} hw={hw} onOpen={setHwDate} /> : undefined}
                 selectedId={selectedId}
                 draggingId={drag?.kind === 'move' ? drag.id : null}
                 preview={preview}
@@ -381,7 +403,9 @@ export function HarinPage() {
             </div>
             {view === 'day' && (
               <div className="mt-4 md:mt-0 md:w-72 md:shrink-0">
-                <DayList items={dayAgenda(blocks, acts, cats, day)} weekday={day} isToday={day === todayWd && todayWd === new Date().getDay()} />
+                <DayList items={dayAgenda(blocks, acts, cats, day)} weekday={day} isToday={day === todayWd && todayWd === new Date().getDay()}>
+                  <HomeworkPanel date={dateOf(day)} hw={hw} title={`${WEEKDAY_LABEL[day]}요일 숙제`} />
+                </DayList>
               </div>
             )}
             </div>
@@ -408,6 +432,12 @@ export function HarinPage() {
               <span className="font-jua text-lg">{labelOf(selected)}</span> {WEEKDAY_LABEL[selected.weekday]} {shortTime(selected.startTime)}~{shortTime(selected.endTime)}
               <span className="text-sm text-stone-500"> · 빈 칸을 누르면 그리로 옮겨요</span>
             </p>
+            {isHomeworkBlock(selected) && (
+              <div className="mb-2 max-h-40 overflow-y-auto rounded-2xl bg-sky-50 p-2 font-jua">
+                <p className="px-1 text-sm text-sky-700">✏️ {WEEKDAY_LABEL[selected.weekday]}요일 숙제</p>
+                <HomeworkChecklist date={dateOf(selected.weekday)} hw={hw} size="small" />
+              </div>
+            )}
             <div className="flex gap-2">
               <ToolButton onClick={() => setSheet({ kind: 'edit', block: selected })}>고치기</ToolButton>
               <ToolButton onClick={() => setCopyOf(selected)}>요일 복사</ToolButton>
@@ -464,12 +494,18 @@ export function HarinPage() {
       {imageOpen && current && (
         <ImageSheet
           poster={{ name: current.name, memo: current.memo, range, blocks: grid, travel, travelEmoji: travelCat?.emoji ?? '🚶', legend }}
+          homework={posterHomework}
           onClose={() => setImageOpen(false)}
         />
       )}
       {detail && (
-        <BlockDetailSheet block={detail} look={blockLook(detail, acts, cats)} onEditInDay={() => editInDay(detail.weekday)} onClose={() => setDetail(null)} />
+        <BlockDetailSheet
+          block={detail}
+          look={blockLook(detail, acts, cats)}
+          extra={isHomeworkBlock(detail) ? <HomeworkPanel date={dateOf(detail.weekday)} hw={hw} title={`${WEEKDAY_LABEL[detail.weekday]}요일 숙제`} /> : undefined}
+          onEditInDay={() => editInDay(detail.weekday)} onClose={() => setDetail(null)} />
       )}
+      {hwDate && <HomeworkDaySheet date={hwDate} hw={hw} onClose={() => setHwDate(null)} />}
       {hintDay !== null && <EditHintSheet weekday={hintDay} onEditInDay={() => editInDay(hintDay)} onClose={() => setHintDay(null)} />}
       {copyOf && <CopySheet block={copyOf} label={labelOf(copyOf)} onCopy={(d) => doCopy(copyOf, d)} onClose={() => setCopyOf(null)} />}
       {confirmDelete && (

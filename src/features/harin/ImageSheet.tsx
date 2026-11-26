@@ -4,9 +4,9 @@ import { useAppData } from '../../app/AppDataContext.tsx';
 import { BottomSheet, Button } from '../../components/ui.tsx';
 import { downloadBlob, renderPng, shareOrDownload } from '../export/imageExport.ts';
 import { ScaledPreview } from '../export/ScaledPreview.tsx';
-import { HarinPoster, POSTER_SIZE, type PosterRatio } from './HarinPoster.tsx';
+import { HarinPoster, POSTER_SIZE, type PosterHomework, type PosterRatio } from './HarinPoster.tsx';
 
-type PosterProps = Omit<React.ComponentProps<typeof HarinPoster>, 'ratio' | 'ref'>;
+type PosterProps = Omit<React.ComponentProps<typeof HarinPoster>, 'ratio' | 'ref' | 'homework'>;
 
 /** Jua 글꼴이 다 불러와졌는지 기다린다(이미지에 글꼴이 빠지지 않게) */
 async function waitForJua(sample: string) {
@@ -17,9 +17,10 @@ async function waitForJua(sample: string) {
   }
 }
 
-export function ImageSheet({ poster, onClose }: { poster: PosterProps; onClose: () => void }) {
+export function ImageSheet({ poster, homework, onClose }: { poster: PosterProps; homework: PosterHomework; onClose: () => void }) {
   const { showToast } = useAppData();
   const [ratio, setRatio] = useState<PosterRatio>('portrait');
+  const [withHomework, setWithHomework] = useState(false);
   const [busy, setBusy] = useState<'save' | 'share' | null>(null);
   const ref = useRef<HTMLDivElement | null>(null);
   const size = POSTER_SIZE[ratio];
@@ -67,9 +68,15 @@ export function ImageSheet({ poster, onClose }: { poster: PosterProps; onClose: 
             </button>
           ))}
         </div>
+        <label className="flex min-h-11 items-center gap-3 rounded-xl bg-sky-50 px-3 font-sans">
+          <input type="checkbox" className="h-6 w-6 accent-rose-500" checked={withHomework} onChange={(e) => setWithHomework(e.target.checked)} />
+          <span className="text-base">
+            {homework.label} 포함 <span className="text-sm text-stone-500">({homework.items.length}개)</span>
+          </span>
+        </label>
         <div className={ratio === 'portrait' ? 'mx-auto w-3/5' : 'w-full'}>
           <ScaledPreview width={size.width} height={size.height}>
-            <HarinPoster ref={ref} ratio={ratio} {...poster} />
+            <HarinPoster ref={ref} ratio={ratio} {...poster} homework={withHomework ? homework : null} />
           </ScaledPreview>
         </div>
         <div className="grid grid-cols-2 gap-2">

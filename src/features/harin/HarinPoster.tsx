@@ -19,6 +19,11 @@ export interface LegendItem {
   color: string | null;
 }
 
+export interface PosterHomework {
+  label: string;
+  items: { emoji: string; name: string; done: boolean }[];
+}
+
 export const HarinPoster = forwardRef<
   HTMLDivElement,
   {
@@ -30,8 +35,10 @@ export const HarinPoster = forwardRef<
     travel: TravelBlock[];
     travelEmoji: string;
     legend: LegendItem[];
+    /** 있으면 시간표 아래에 오늘의 숙제를 같이 그린다 */
+    homework?: PosterHomework | null;
   }
->(function HarinPoster({ ratio, name, memo, range, blocks, travel, travelEmoji, legend }, ref) {
+>(function HarinPoster({ ratio, name, memo, range, blocks, travel, travelEmoji, legend, homework }, ref) {
   const { width, height } = POSTER_SIZE[ratio];
   const portrait = ratio === 'portrait';
   const pad = portrait ? 40 : 44;
@@ -39,7 +46,9 @@ export const HarinPoster = forwardRef<
   const legendH = portrait ? 190 : 96;
   const dayHeadH = portrait ? 56 : 44;
   const labelW = portrait ? 64 : 70;
-  const gridH = height - pad * 2 - headH - legendH - dayHeadH;
+  const hwMax = portrait ? 6 : 8;
+  const hwH = homework ? (portrait ? 190 : 108) : 0;
+  const gridH = height - pad * 2 - headH - legendH - dayHeadH - hwH;
   const u = gridH / (range.end - range.start); // 1분당 px
   const f = Math.max(14, Math.min(26, u * 9)); // 블록 글자 크기
   const slots: number[] = [];
@@ -143,6 +152,31 @@ export const HarinPoster = forwardRef<
           </div>
         ))}
       </div>
+
+      {homework && (
+        <div style={{ height: hwH }} className="flex flex-col justify-center">
+          <div className="rounded-[24px] bg-white/90 px-4 py-2 shadow-sm" style={{ boxShadow: 'inset 0 0 0 2px #bae6fd' }}>
+            <div className="text-sky-600" style={{ fontSize: portrait ? 34 : 26 }}>
+              ✏️ {homework.label}
+              {homework.items.length > 0 && homework.items.every((i) => i.done) ? ' · 다 했어요! 🎉' : ''}
+            </div>
+            {homework.items.length === 0 ? (
+              <div className="text-stone-500" style={{ fontSize: portrait ? 28 : 22 }}>
+                숙제가 없어요 🎈
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-x-4 gap-y-1" style={{ fontSize: portrait ? 28 : 21 }}>
+                {homework.items.slice(0, hwMax).map((it, i) => (
+                  <span key={i} className={`truncate ${it.done ? 'text-stone-400 line-through' : ''}`} style={{ maxWidth: portrait ? 460 : 340 }}>
+                    {it.done ? '✅' : '⬜'} {it.emoji} {it.name}
+                  </span>
+                ))}
+                {homework.items.length > hwMax && <span className="text-stone-500">외 {homework.items.length - hwMax}개</span>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div style={{ height: legendH }} className="flex flex-wrap content-center items-center justify-center gap-x-3 gap-y-2 px-2">
         {legend.map((l) => (

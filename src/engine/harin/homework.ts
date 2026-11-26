@@ -24,6 +24,12 @@ export function previousWorkday(date: string): string | null {
   return addDays(date, wd === 1 ? -3 : -1);
 }
 
+/** 그날 또는 그 뒤 첫 평일(토·일이면 다음 월요일). "오늘의 숙제" 카드가 보여 줄 날짜 */
+export function nextWorkdayOnOrAfter(date: string): string {
+  const wd = weekdayOf(date);
+  return wd === 6 ? addDays(date, 2) : wd === 0 ? addDays(date, 1) : date;
+}
+
 type BlockLike = Pick<KidBlockRow, 'weekday' | 'activityId'>;
 
 /** 그 학원 블록이 있는 요일들(대표 시간표 기준) */

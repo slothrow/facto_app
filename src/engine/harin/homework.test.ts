@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { KidBlockRow, KidHomeworkRow } from '../../storage/rosterTypes.ts';
-import { currentWeekDates, homeworksForDate, missedHomeworks, previousWorkday, repeatLabel, weekDates } from './homework.ts';
+import { currentWeekDates, homeworksForDate, missedHomeworks, nextWorkdayOnOrAfter, previousWorkday, repeatLabel, weekDates } from './homework.ts';
 
 // 2026-11-30 = 월요일
 const MON = '2026-11-30';
@@ -122,6 +122,12 @@ describe('어제 못 한 숙제·주 계산', () => {
     expect(currentWeekDates(SAT)[0]).toBe('2026-12-07');
     expect(currentWeekDates(SUN)[0]).toBe('2026-12-07');
     expect(currentWeekDates(WED)[0]).toBe(MON);
+  });
+
+  it('nextWorkdayOnOrAfter: 평일은 그날, 주말은 다음 월요일', () => {
+    expect(nextWorkdayOnOrAfter(WED)).toBe(WED);
+    expect(nextWorkdayOnOrAfter(SAT)).toBe('2026-12-07');
+    expect(nextWorkdayOnOrAfter(SUN)).toBe('2026-12-07');
   });
 
   it('repeatLabel', () => {

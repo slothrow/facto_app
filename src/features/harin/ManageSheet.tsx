@@ -6,6 +6,8 @@ import { BottomSheet, Button, ConfirmDialog, Field, inputClass } from '../../com
 import { shortTime } from '../../engine/classTime.ts';
 import { DEFAULT_TRAVEL, KID_PALETTE, VIEW_END, VIEW_START } from '../../engine/harin/index.ts';
 import { newId, type KidActivityRow, type KidCategoryRow, type KidTimetableRow } from '../../storage/rosterTypes.ts';
+import { ColorField, EmojiField } from './KidFields.tsx';
+import { HomeworksTab } from './HomeworkManage.tsx';
 import {
   activityUseCount,
   categoryUseCount,
@@ -16,15 +18,15 @@ import {
   timeOptions,
 } from './harinModel.ts';
 
-export type ManageTab = 'timetables' | 'activities' | 'categories' | 'view';
+export type ManageTab = 'timetables' | 'activities' | 'homeworks' | 'categories' | 'view';
 const TABS: { id: ManageTab; label: string }[] = [
   { id: 'timetables', label: '시간표' },
   { id: 'activities', label: '학원' },
+  { id: 'homeworks', label: '숙제' },
   { id: 'categories', label: '종류' },
   { id: 'view', label: '보기' },
 ];
 
-const EMOJI_SUGGEST = ['🎹', '🎻', '🏊', '⚽', '🩰', '🎨', '📚', '🧮', '💻', '🔤', '🥋', '🎤', '🍙', '🍚', '🧸', '✏️', '⭐', '🛁', '📺', '😴'];
 
 export function ManageSheet({
   initialTab,
@@ -48,7 +50,7 @@ export function ManageSheet({
             role="tab"
             aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
-            className={`h-11 flex-1 rounded-full text-base font-semibold ${tab === t.id ? 'bg-rose-400 text-white' : 'text-stone-600'}`}
+            className={`h-11 flex-1 rounded-full text-[15px] font-semibold ${tab === t.id ? 'bg-rose-400 text-white' : 'text-stone-600'}`}
           >
             {t.label}
           </button>
@@ -56,6 +58,7 @@ export function ManageSheet({
       </div>
       {tab === 'timetables' && <TimetablesTab currentId={currentId} onOpen={onOpenTimetable} />}
       {tab === 'activities' && <ActivitiesTab />}
+      {tab === 'homeworks' && <HomeworksTab />}
       {tab === 'categories' && <CategoriesTab />}
       {tab === 'view' && <ViewTab />}
     </BottomSheet>
@@ -249,6 +252,7 @@ function ActivitiesTab() {
       <ul className="space-y-2">
         {list.map((a) => {
           const used = activityUseCount(roster, a.id);
+          const hwUsed = roster.kidHomeworks.filter((h) => h.activityId === a.id).length;
           return (
             <li key={a.id} className="flex items-center gap-2 rounded-2xl border-2 border-stone-200 p-2">
               <button type="button" onClick={() => setEdit(a)} className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left">
@@ -261,10 +265,17 @@ function ActivitiesTab() {
                     {a.isHome ? '집 수업(이동 없음)' : `이동 ${a.travelMinutes}분`}
                     {a.place ? ` · ${a.place}` : ''}
                     {used ? ` · 일정 ${used}개` : ''}
+                    {hwUsed ? ` · 숙제 ${hwUsed}개` : ''}
                   </span>
                 </span>
               </button>
-              <SmallButton narrow danger disabled={used > 0} onClick={() => setDel(a)} title={used > 0 ? '시간표에서 쓰는 학원은 지울 수 없어요' : undefined}>
+              <SmallButton
+                narrow
+                danger
+                disabled={used > 0 || hwUsed > 0}
+                onClick={() => setDel(a)}
+                title={used > 0 || hwUsed > 0 ? '시간표나 숙제에서 쓰는 학원은 지울 수 없어요' : undefined}
+              >
                 삭제
               </SmallButton>
             </li>
@@ -274,7 +285,9 @@ function ActivitiesTab() {
       <Button className="w-full" onClick={() => setEdit(blank())}>
         + 학원 추가
       </Button>
-      {list.some((a) => activityUseCount(roster, a.id) > 0) && <p className="text-sm text-stone-500">시간표에서 쓰는 학원은 일정을 먼저 지워야 삭제할 수 있어요.</p>}
+      {list.some((a) => activityUseCount(roster, a.id) > 0 || roster.kidHomeworks.some((h) => h.activityId === a.id)) && (
+        <p className="text-sm text-stone-500">시간표나 숙제에서 쓰는 학원은 그 일정·숙제를 먼저 지워야 삭제할 수 있어요.</p>
+      )}
       {del && (
         <ConfirmDialog
           title={`"${del.name}"을 지울까요?`}
@@ -452,44 +465,6 @@ function ViewTab() {
 // ---------------------------------------------------------------
 // 공통
 // ---------------------------------------------------------------
-
-function EmojiField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <Field label="이모지">
-      <div className="space-y-2">
-        <input className={`${inputClass} text-2xl`} value={value} maxLength={8} onChange={(e) => onChange(e.target.value)} aria-label="이모지 직접 입력" />
-        <div className="flex flex-wrap gap-1">
-          {EMOJI_SUGGEST.map((e) => (
-            <button key={e} type="button" onClick={() => onChange(e)} className={`h-11 w-11 rounded-xl text-2xl ${value === e ? 'bg-rose-100 ring-2 ring-rose-400' : 'bg-stone-50'}`}>
-              {e}
-            </button>
-          ))}
-        </div>
-      </div>
-    </Field>
-  );
-}
-
-function ColorField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div>
-      <span className="mb-1 block text-sm font-medium text-stone-600">색</span>
-      <div className="flex flex-wrap gap-2">
-        {KID_PALETTE.map((c) => (
-          <button
-            key={c}
-            type="button"
-            aria-label={`색 ${c}`}
-            aria-pressed={value === c}
-            onClick={() => onChange(c)}
-            className={`h-11 w-11 rounded-full border-2 border-white shadow ${value === c ? 'ring-4 ring-rose-400' : ''}`}
-            style={{ backgroundColor: c }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function SmallButton({ onClick, danger, disabled, title, narrow, children }: { onClick: () => void; danger?: boolean; disabled?: boolean; title?: string; narrow?: boolean; children: ReactNode }) {
   return (
